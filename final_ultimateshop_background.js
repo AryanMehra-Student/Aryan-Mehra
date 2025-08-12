@@ -108,5 +108,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 });
             }, 2000); // Wait 2 seconds before refresh
         });
+    } else if (message.type === 'clear_cookies_and_close') {
+        console.log('UltimateShop Background: Clearing cookies and closing tab due to CAPTCHA failure...');
+        
+        // Clear all cookies for ultimateshop.vc
+        chrome.cookies.getAll({ domain: 'ultimateshop.vc' }, (cookies) => {
+            cookies.forEach(cookie => {
+                const url = `https://${cookie.domain}${cookie.path}`;
+                chrome.cookies.remove({ url, name: cookie.name });
+            });
+            console.log('Cleared all cookies for ultimateshop.vc');
+            
+            // Close the current tab after clearing cookies
+            setTimeout(() => {
+                chrome.tabs.remove(sender.tab.id, () => {
+                    console.log('Tab closed due to CAPTCHA failure:', sender.tab.id);
+                });
+            }, 1000);
+        });
     }
 });

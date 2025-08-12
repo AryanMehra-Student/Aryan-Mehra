@@ -14,6 +14,20 @@ let isWaitingForCaptcha = false;
 let captchaRetryCount = 0;
 let MAX_CAPTCHA_RETRIES = 5; // Maximum 5 CAPTCHA retries per account
 
+// Handle CAPTCHA failure with cookie clear and tab close
+function handleCaptchaFailure() {
+    console.log('UltimateShop Checker: CAPTCHA failure detected, clearing cookies and closing tab...');
+    
+    // Clear all cookies for ultimateshop.vc
+    chrome.runtime.sendMessage({
+        type: 'clear_cookies_and_close'
+    });
+}
+
+// Track CAPTCHA refresh attempts
+let captchaRefreshAttempts = 0;
+const MAX_CAPTCHA_REFRESH_ATTEMPTS = 2;
+
 // Clear the login form completely
 function clearLoginForm() {
     const usernameInput = document.querySelector('#LoginForm_username');
@@ -45,10 +59,11 @@ function isLoginPage() {
            document.querySelector('#LoginForm_username');
 }
 
-// Check if we're on the success page (news page with discount text)
+// Check if we're on the success page (after login)
 function isSuccessPage() {
-    return window.location.href.includes('/news') && 
-           document.body.textContent.includes('Discount :');
+    return window.location.href.includes('/news') || 
+           document.body.innerText.includes('Discount :') ||
+           document.querySelector('a[href="/profile"]') !== null;
 }
 
 // Check if we're on the profile page
@@ -188,7 +203,18 @@ function waitForCaptcha(maxAttempts = 10, interval = 1000) {
             
             if (attempts >= maxAttempts) {
                 console.log('UltimateShop Checker: CAPTCHA image not found after max attempts');
-                reject(new Error('CAPTCHA image not found'));
+                
+                // Increment refresh attempts
+                captchaRefreshAttempts++;
+                console.log(`UltimateShop Checker: CAPTCHA refresh attempt ${captchaRefreshAttempts}/${MAX_CAPTCHA_REFRESH_ATTEMPTS}`);
+                
+                if (captchaRefreshAttempts >= MAX_CAPTCHA_REFRESH_ATTEMPTS) {
+                    console.log('UltimateShop Checker: Max CAPTCHA refresh attempts reached, clearing cookies and closing tab...');
+                    handleCaptchaFailure();
+                    reject(new Error('CAPTCHA image not found after max refresh attempts'));
+                } else {
+                    reject(new Error('CAPTCHA image not found'));
+                }
                 return;
             }
             
@@ -264,10 +290,15 @@ async function getCaptcha() {
         
         // If CAPTCHA fails, try to refresh and retry
         if (error.message.includes('CAPTCHA image not found')) {
-            console.log('UltimateShop Checker: CAPTCHA not found, refreshing page...');
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            if (captchaRefreshAttempts >= MAX_CAPTCHA_REFRESH_ATTEMPTS) {
+                console.log('UltimateShop Checker: Max CAPTCHA refresh attempts reached, clearing cookies and closing tab...');
+                handleCaptchaFailure();
+            } else {
+                console.log('UltimateShop Checker: CAPTCHA not found, refreshing page...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
         }
         
         return null;
@@ -315,6 +346,7 @@ async function performLoginAutomation() {
     
     // Reset CAPTCHA retry counter for new account
     captchaRetryCount = 0;
+    captchaRefreshAttempts = 0; // Reset refresh attempts for new account
     
     console.log('UltimateShop Checker: Starting login automation...');
     isChecking = true;
@@ -492,10 +524,22 @@ function handlePage() {
         }
     } else if (isSuccessPage()) {
         console.log('UltimateShop Checker: Login successful! Navigating to profile...');
+        
+        // Clear the checking flag to allow new operations
+        isChecking = false;
+        
         // Navigate to profile page after successful login
-        setTimeout(navigateToProfile, 2000);
+        setTimeout(() => {
+            console.log('UltimateShop Checker: Redirecting to profile page...');
+            window.location.href = 'https://ultimateshop.vc/profile';
+        }, 2000);
+        
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
+        
+        // Clear the checking flag
+        isChecking = false;
+        
         const username = sessionStorage.getItem('current_username');
         const password = sessionStorage.getItem('current_password');
         if (username && password) {
@@ -518,6 +562,11 @@ function handlePage() {
                 console.log('UltimateShop Checker: Refreshing tab for next account...');
                 window.location.reload();
             }, 3000);
+        } else {
+            console.log('UltimateShop Checker: No credentials found on profile page, refreshing...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         }
     }
 }
