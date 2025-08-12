@@ -1,6 +1,6 @@
 // UltimateShop Checker - Background Service Worker (Multiple Tabs Support)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === '2fa_detected' || message.type === 'unactivated_detected' || message.type === 'hit_detected' || message.type === 'fail_detected') {
+    if (message.type === '2fa_detected' || message.type === 'unactivated_detected' || message.type === 'hit_detected' || message.type === 'fail_detected' || message.type === 'banned_detected') {
         const { username, password } = message;
         let endpoint;
         let body = { username, password };
@@ -20,6 +20,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             };
         } else if (message.type === 'fail_detected') {
             endpoint = 'report-fail';
+        } else if (message.type === 'banned_detected') {
+            endpoint = 'report-banned';
         }
 
         // Report to local server

