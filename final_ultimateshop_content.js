@@ -95,9 +95,17 @@ function getErrorMessage() {
             return 'Incorrect username or password';
         } else if (text.includes('The verification code is incorrect')) {
             return 'The verification code is incorrect';
+        } else if (text.includes('BANNED') || text.includes('banned') || text.includes('Banned')) {
+            return 'BANNED';
         } else if (text.includes('confirm') || text.includes('maintenance')) {
             return 'SITE_ISSUE';
         }
+    }
+    
+    // Also check body text for BANNED
+    const bodyText = document.body.innerText;
+    if (bodyText.includes('BANNED') || bodyText.includes('banned') || bodyText.includes('Banned')) {
+        return 'BANNED';
     }
     
     return null;
@@ -209,7 +217,26 @@ function handlePage() {
         
         const error = getErrorMessage();
         if (error) {
-            if (error === 'SITE_ISSUE') {
+            if (error === 'BANNED') {
+                console.log('UltimateShop Checker: Account BANNED, skipping...');
+                
+                // Report as BANNED
+                const username = sessionStorage.getItem('current_username');
+                const password = sessionStorage.getItem('current_password');
+                if (username && password) {
+                    chrome.runtime.sendMessage({
+                        type: 'banned_detected',
+                        username,
+                        password
+                    });
+                    sessionStorage.removeItem('current_username');
+                    sessionStorage.removeItem('current_password');
+                }
+                
+                // Try next account
+                setTimeout(performLoginAutomation, 1000);
+                
+            } else if (error === 'SITE_ISSUE') {
                 console.log('UltimateShop Checker: Site issue detected, trying to resolve...');
                 
                 // Try to handle site issue

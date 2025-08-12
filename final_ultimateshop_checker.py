@@ -399,6 +399,25 @@ def report_fail():
     
     return jsonify({"status": "error", "message": "Missing username or password"}), 400
 
+@app.route('/report-banned', methods=['POST'])
+def report_banned():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    if username and password:
+        # Save to banned.txt
+        banned_file = os.path.join(HIT_FOLDER, "banned.txt")
+        with open(banned_file, "a", encoding='utf-8') as f:
+            f.write(f"{username}:{password}\n")
+        
+        print_status(f"{Fore.RED}[ BANNED ] | {username}:{password}", "error")
+        print_status(f"{Fore.RED}Made By 🔥 @AliveRishu 🔥", "error")
+        
+        return jsonify({"status": "success", "message": "Banned account reported"})
+    
+    return jsonify({"status": "error", "message": "Missing username or password"}), 400
+
 @app.route("/status", methods=["GET"])
 def get_status():
     return jsonify({
