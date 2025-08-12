@@ -81,12 +81,58 @@ function navigateToProfile() {
 // Get the error message from the page
 function getErrorMessage() {
     const bodyText = document.body.innerText;
+    
+    // Check for BANNED account
+    if (bodyText.includes('BANNED') || bodyText.includes('banned') || bodyText.includes('Banned')) {
+        return 'BANNED';
+    }
+    
+    // Check for CAPTCHA errors
     if (bodyText.includes('The verification code is incorrect')) {
         return 'The verification code is incorrect';
-    } else if (bodyText.includes('Incorrect username or password')) {
+    }
+    
+    // Check for credential errors
+    if (bodyText.includes('Incorrect username or password')) {
         return 'Incorrect username or password';
     }
+    
+    // Check for confirm button or maintenance
+    if (bodyText.includes('confirm') || bodyText.includes('Confirm') || bodyText.includes('maintenance') || bodyText.includes('Maintenance')) {
+        return 'SITE_ISSUE';
+    }
+    
     return null;
+}
+
+// Check if confirm button is present
+function isConfirmButtonPresent() {
+    const confirmButtons = document.querySelectorAll('button, input[type="submit"], .btn');
+    for (let button of confirmButtons) {
+        if (button.textContent.toLowerCase().includes('confirm') || 
+            button.textContent.toLowerCase().includes('continue') ||
+            button.textContent.toLowerCase().includes('proceed')) {
+            return button;
+        }
+    }
+    return null;
+}
+
+// Handle confirm button click
+function handleConfirmButton() {
+    const confirmButton = isConfirmButtonPresent();
+    if (confirmButton) {
+        console.log('UltimateShop Checker: Found confirm button, clicking...');
+        confirmButton.click();
+        
+        // Wait for page to load after confirm
+        setTimeout(() => {
+            console.log('UltimateShop Checker: After confirm button, checking page...');
+            handlePage();
+        }, 3000);
+        return true;
+    }
+    return false;
 }
 
 // Retry login with new CAPTCHA using same credentials
