@@ -595,8 +595,11 @@ function handlePage() {
             }
         }
     } else if (isSuccessPage()) {
+        console.log('UltimateShop Checker: ===== SUCCESS PAGE DETECTED =====');
         console.log('UltimateShop Checker: Login successful! SUCCESS KEY "Discount :" detected!');
-        console.log('UltimateShop Checker: Current page content includes success indicator');
+        console.log('UltimateShop Checker: Current URL:', window.location.href);
+        console.log('UltimateShop Checker: Current checking flag:', isChecking);
+        console.log('UltimateShop Checker: Page content preview:', document.body.innerText.substring(0, 200));
         
         // Clear the checking flag immediately
         isChecking = false;
@@ -607,8 +610,34 @@ function handlePage() {
         
         try {
             // Force navigation to profile
+            console.log('UltimateShop Checker: Attempting window.location.href change...');
             window.location.href = 'https://ultimateshop.vc/profile';
             console.log('UltimateShop Checker: Navigation initiated to profile page');
+            
+            // Verify navigation happened
+            setTimeout(() => {
+                console.log('UltimateShop Checker: Checking if navigation was successful...');
+                console.log('UltimateShop Checker: Current URL after navigation attempt:', window.location.href);
+                
+                if (window.location.href.includes('/profile')) {
+                    console.log('UltimateShop Checker: Navigation successful!');
+                } else {
+                    console.log('UltimateShop Checker: Navigation failed, trying alternative method...');
+                    
+                    // Try alternative navigation
+                    try {
+                        window.location.replace('https://ultimateshop.vc/profile');
+                        console.log('UltimateShop Checker: Alternative navigation attempted');
+                    } catch (replaceError) {
+                        console.error('UltimateShop Checker: Alternative navigation failed:', replaceError);
+                        
+                        // Final fallback: refresh page
+                        console.log('UltimateShop Checker: All navigation methods failed, refreshing page...');
+                        window.location.reload();
+                    }
+                }
+            }, 1000);
+            
         } catch (error) {
             console.error('UltimateShop Checker: Navigation error:', error);
             
@@ -622,6 +651,11 @@ function handlePage() {
                 window.location.reload();
             }
         }
+        
+        console.log('UltimateShop Checker: ===== SUCCESS PAGE HANDLER COMPLETED =====');
+        
+        // Start page state monitoring
+        monitorPageState();
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
@@ -760,4 +794,43 @@ function monitorSuccessKey() {
 function addSuccessKeyMonitoring() {
     console.log('UltimateShop Checker: Starting success key monitoring...');
     monitorSuccessKey();
+}
+
+// Monitor page state changes
+function monitorPageState() {
+    console.log('UltimateShop Checker: Starting page state monitoring...');
+    
+    let monitorCount = 0;
+    const maxMonitors = 20; // Monitor for 20 seconds
+    
+    const monitorInterval = setInterval(() => {
+        monitorCount++;
+        const currentUrl = window.location.href;
+        const hasDiscount = document.body.innerText.includes('Discount :');
+        const hasProfile = currentUrl.includes('/profile');
+        
+        console.log(`UltimateShop Checker: Page state monitor (${monitorCount}/${maxMonitors}):`, {
+            url: currentUrl,
+            hasDiscount,
+            hasProfile,
+            checkingFlag: isChecking
+        });
+        
+        if (hasProfile) {
+            console.log('UltimateShop Checker: Profile page detected, stopping monitor');
+            clearInterval(monitorInterval);
+            return;
+        }
+        
+        if (monitorCount >= maxMonitors) {
+            console.log('UltimateShop Checker: Page state monitoring completed');
+            clearInterval(monitorInterval);
+            
+            // If still not on profile page, force refresh
+            if (!hasProfile) {
+                console.log('UltimateShop Checker: Still not on profile page, forcing refresh...');
+                window.location.reload();
+            }
+        }
+    }, 1000);
 }
