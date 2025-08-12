@@ -4,9 +4,15 @@ function getRandomDelay() {
     return Math.floor(Math.random() * 2000) + 1000; // 1000 to 3000 ms
 }
 
-// CAPTCHA retry counter
+// Global variables
+let isChecking = false;
+let currentAccountIndex = 0;
+let accounts = [];
+let captchaImage = null;
+let captchaSolution = null;
+let isWaitingForCaptcha = false;
 let captchaRetryCount = 0;
-const MAX_CAPTCHA_RETRIES = 3; // Maximum 3 CAPTCHA retries per account
+let MAX_CAPTCHA_RETRIES = 3;
 
 // Check if we're on the login page
 function isLoginPage() {
@@ -78,142 +84,49 @@ function navigateToProfile() {
     }
 }
 
-// Get the error message from the page
+// Get error message from the page
 function getErrorMessage() {
-    const bodyText = document.body.innerText;
+    const errorElements = document.querySelectorAll('.alert, .error, .text-danger, .help-block');
     
-    // Check for BANNED account
-    if (bodyText.includes('BANNED') || bodyText.includes('banned') || bodyText.includes('Banned')) {
-        return 'BANNED';
-    }
-    
-    // Check for CAPTCHA errors
-    if (bodyText.includes('The verification code is incorrect')) {
-        return 'The verification code is incorrect';
-    }
-    
-    // Check for credential errors
-    if (bodyText.includes('Incorrect username or password')) {
-        return 'Incorrect username or password';
-    }
-    
-    // Check for confirm button or maintenance
-    if (bodyText.includes('confirm') || bodyText.includes('Confirm') || bodyText.includes('maintenance') || bodyText.includes('Maintenance')) {
-        return 'SITE_ISSUE';
+    for (let element of errorElements) {
+        const text = element.textContent.trim();
+        
+        if (text.includes('Incorrect username or password')) {
+            return 'Incorrect username or password';
+        } else if (text.includes('The verification code is incorrect')) {
+            return 'The verification code is incorrect';
+        } else if (text.includes('confirm') || text.includes('maintenance')) {
+            return 'SITE_ISSUE';
+        }
     }
     
     return null;
-}
-
-// Check if confirm button is present
-function isConfirmButtonPresent() {
-    const confirmButtons = document.querySelectorAll('button, input[type="submit"], .btn, a');
-    for (let button of confirmButtons) {
-        const buttonText = button.textContent.toLowerCase();
-        if (buttonText.includes('confirm') || 
-            buttonText.includes('continue') ||
-            buttonText.includes('proceed') ||
-            buttonText.includes('ok') ||
-            buttonText.includes('yes') ||
-            buttonText.includes('accept')) {
-            return button;
-        }
-    }
-    return null;
-}
-
-// Handle confirm button click with better logic
-function handleConfirmButton() {
-    const confirmButton = isConfirmButtonPresent();
-    if (confirmButton) {
-        console.log('UltimateShop Checker: Found confirm button, clicking...');
-        
-        // Click the confirm button
-        confirmButton.click();
-        
-        // Wait for page to load after confirm
-        setTimeout(() => {
-            console.log('UltimateShop Checker: After confirm button, checking page...');
-            
-            // Check if we're back to login page
-            if (isLoginPage()) {
-                console.log('UltimateShop Checker: Back to login page, starting automation...');
-                // Start fresh login automation
-                setTimeout(performLoginAutomation, 2000);
-            } else {
-                // If not login page, refresh to get there
-                console.log('UltimateShop Checker: Not on login page, refreshing...');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            }
-        }, 3000);
-        return true;
-    }
-    return false;
-}
-
-// Check for confirm buttons on page load
-function checkForConfirmButtons() {
-    // Wait a bit for page to fully load
-    setTimeout(() => {
-        if (handleConfirmButton()) {
-            console.log('UltimateShop Checker: Confirm button handled on page load');
-        } else {
-            console.log('UltimateShop Checker: No confirm button found, proceeding normally');
-        }
-    }, 2000);
 }
 
 // Retry login with new CAPTCHA using same credentials
 async function retryWithNewCaptcha() {
     const usernameInput = document.querySelector('#LoginForm_username');
     const passwordInput = document.querySelector('#LoginForm_password');
-    const captchaImg = document.querySelector('#yw0');
-    const captchaInput = document.querySelector('#LoginForm_verifyCode');
-    const submitButton = document.querySelector('#login-form > div > div > div > div > div > div.mb-3.mb-0.text-center > button');
-
-    if (!usernameInput || !passwordInput || !captchaImg || !captchaInput || !submitButton) {
-        console.log('UltimateShop Checker: Form elements not found for retry.');
-        return;
-    }
-
-    const username = sessionStorage.getItem('current_username');
-    const password = sessionStorage.getItem('current_password');
-    if (!username || !password) {
-        console.log('UltimateShop Checker: No credentials found for retry.');
-        return;
-    }
-
-    usernameInput.value = username;
-    passwordInput.value = password;
-
-    try {
-        const canvas = document.createElement('canvas');
-        canvas.width = captchaImg.width;
-        canvas.height = captchaImg.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(captchaImg, 0, 0);
-        const base64Image = canvas.toDataURL().split(',')[1];
-
-        const captchaResponse = await fetch('http://localhost:5050/solve-captcha', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64Image })
-        });
-        if (!captchaResponse.ok) throw new Error('Failed to solve CAPTCHA');
-        const { captcha: solvedCaptcha } = await captchaResponse.json();
-
-        captchaInput.value = solvedCaptcha;
-        console.log('UltimateShop Checker: Filled new CAPTCHA.');
-
-        const delay = getRandomDelay();
-        setTimeout(() => {
-            submitButton.click();
-            console.log('UltimateShop Checker: Clicked login button for retry.');
-        }, delay);
-    } catch (error) {
-        console.error('UltimateShop Checker: Error during retry with new CAPTCHA:', error);
+    
+    if (usernameInput && passwordInput) {
+        // Get stored credentials
+        const username = sessionStorage.getItem('current_username');
+        const password = sessionStorage.getItem('current_password');
+        
+        if (username && password) {
+            // Fill in the form
+            usernameInput.value = username;
+            passwordInput.value = password;
+            
+            // Trigger input events
+            usernameInput.dispatchEvent(new Event('input', { bubbles: true }));
+            passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Wait a bit and then get new CAPTCHA
+            setTimeout(() => {
+                getCaptcha();
+            }, 1000);
+        }
     }
 }
 
@@ -286,94 +199,40 @@ function handlePage() {
     if (isLoginPage()) {
         console.log('UltimateShop Checker: Handling login page...');
         
-        // First check for confirm button
-        if (handleConfirmButton()) {
-            return; // Wait for confirm button to process
-        }
-        
         const error = getErrorMessage();
         if (error) {
-            if (error === 'BANNED') {
-                console.log('UltimateShop Checker: Account BANNED, skipping...');
-                
-                // Report as BANNED
-                const username = sessionStorage.getItem('current_username');
-                const password = sessionStorage.getItem('current_password');
-                if (username && password) {
-                    chrome.runtime.sendMessage({
-                        type: 'banned_detected',
-                        username,
-                        password
-                    });
-                    sessionStorage.removeItem('current_username');
-                    sessionStorage.removeItem('current_password');
-                }
-                
-                // Try next account
-                setTimeout(performLoginAutomation, 1000);
-                
-            } else if (error === 'SITE_ISSUE') {
+            if (error === 'SITE_ISSUE') {
                 console.log('UltimateShop Checker: Site issue detected, trying to resolve...');
                 
                 // Try to handle site issue
-                if (handleConfirmButton()) {
-                    return;
-                } else {
-                    // If can't resolve, refresh and retry
-                    setTimeout(() => {
-                        console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
-                        window.location.reload();
-                    }, 2000);
-                }
+                // If can't resolve, refresh and retry
+                setTimeout(() => {
+                    console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
+                    window.location.reload();
+                }, 2000);
                 
             } else if (error === 'The verification code is incorrect') {
-                console.log('UltimateShop Checker: CAPTCHA incorrect, attempt:', captchaRetryCount + 1);
+                console.log('UltimateShop Checker: CAPTCHA incorrect, retrying with same account...');
                 
-                // Check if we've exceeded max retries
-                if (captchaRetryCount >= MAX_CAPTCHA_RETRIES) {
-                    console.log('UltimateShop Checker: Max CAPTCHA retries reached, trying next account...');
-                    
-                    // Report as FAIL due to CAPTCHA issues
-                    const username = sessionStorage.getItem('current_username');
-                    const password = sessionStorage.getItem('current_password');
-                    if (username && password) {
-                        chrome.runtime.sendMessage({
-                            type: 'fail_detected',
-                            username,
-                            password
-                        });
-                        sessionStorage.removeItem('current_username');
-                        sessionStorage.removeItem('current_password');
-                    }
-                    
-                    // Reset counter and try next account
-                    captchaRetryCount = 0;
-                    setTimeout(performLoginAutomation, 1000);
-                    return;
-                }
-                
-                // Increment retry counter
-                captchaRetryCount++;
-                
-                // Store credentials for retry
+                // Keep retrying with same account until successful
                 const username = sessionStorage.getItem('current_username');
                 const password = sessionStorage.getItem('current_password');
                 
                 if (username && password) {
-                    // Clear current session
+                    // Clear current session for fresh CAPTCHA
                     sessionStorage.removeItem('current_username');
                     sessionStorage.removeItem('current_password');
                     
                     // Refresh tab to get fresh CAPTCHA
                     setTimeout(() => {
-                        console.log('UltimateShop Checker: Refreshing tab to get fresh CAPTCHA (retry', captchaRetryCount, 'of', MAX_CAPTCHA_RETRIES, ')...');
+                        console.log('UltimateShop Checker: Refreshing tab to get fresh CAPTCHA for same account...');
                         window.location.reload();
                     }, 1000);
                 } else {
                     // No credentials, try next account
-                    captchaRetryCount = 0;
                     setTimeout(performLoginAutomation, 1000);
                 }
+                
             } else if (error === 'Incorrect username or password') {
                 // Report as FAIL
                 const username = sessionStorage.getItem('current_username');
@@ -384,17 +243,13 @@ function handlePage() {
                         username,
                         password
                     });
-                    sessionStorage.removeItem('current_username');
                     sessionStorage.removeItem('current_password');
+                    sessionStorage.removeItem('current_username');
                 }
                 // Try next account
                 setTimeout(performLoginAutomation, 1000);
             }
         } else {
-            // Check for confirm buttons before starting automation
-            if (handleConfirmButton()) {
-                return;
-            }
             performLoginAutomation();
         }
     } else if (isSuccessPage()) {
@@ -451,21 +306,18 @@ function autoStartChecking() {
 
 // Run when the page loads
 window.addEventListener('load', () => {
-    console.log('UltimateShop Checker: Page loaded, checking for confirm buttons first...');
+    console.log('UltimateShop Checker: Page loaded, auto-starting...');
     
-    // First check for confirm buttons that might appear after refresh
-    checkForConfirmButtons();
-    
-    // Then proceed with normal flow
+    // Auto-start checking after page loads
     setTimeout(() => {
         autoStartChecking();
-    }, 3000);
+    }, 2000);
 });
 
 // Also run when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('UltimateShop Checker: DOM ready, checking for confirm buttons...');
-    checkForConfirmButtons();
+    console.log('UltimateShop Checker: DOM ready, checking page...');
+    autoStartChecking();
 });
 
 // Observe DOM changes for dynamic content
