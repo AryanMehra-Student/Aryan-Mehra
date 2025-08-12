@@ -184,9 +184,27 @@ def load_accounts():
     return accounts
 
 def save_accounts(accounts):
-    with open(ACCOUNTS_FILE, "w") as f:
-        for acc in accounts:
-            f.write(f"{acc['username']}:{acc['password']}\n")
+    try:
+        with open(ACCOUNTS_FILE, "w", encoding='utf-8') as f:
+            for acc in accounts:
+                f.write(f"{acc['username']}:{acc['password']}\n")
+    except UnicodeEncodeError as e:
+        logger.error('Unicode encoding error: %s', str(e))
+        # Try with different encoding
+        try:
+            with open(ACCOUNTS_FILE, "w", encoding='cp1252', errors='ignore') as f:
+                for acc in accounts:
+                    f.write(f"{acc['username']}:{acc['password']}\n")
+        except Exception as e2:
+            logger.error('Failed to save accounts with cp1252: %s', str(e2))
+            # Last resort - save without problematic characters
+            with open(ACCOUNTS_FILE, "w", encoding='utf-8', errors='ignore') as f:
+                for acc in accounts:
+                    username = acc['username'].encode('utf-8', errors='ignore').decode('utf-8')
+                    password = acc['password'].encode('utf-8', errors='ignore').decode('utf-8')
+                    f.write(f"{username}:{password}\n")
+    except Exception as e:
+        logger.error('Error saving accounts: %s', str(e))
 
 # Main menu and initialization
 def main_menu():

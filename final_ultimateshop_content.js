@@ -51,30 +51,17 @@ function extractProfileData() {
             cardsPurchased = cardsRow.nextElementSibling.textContent.trim();
         }
 
-        // Combo Check Logic
-        let comboCheck = 'INVALID';
-        if (balance !== '0.00' && balance !== '0.00 $') {
-            comboCheck = 'VALID';
-        }
-
-        // Total Captures (Cards Purchased)
-        let totalCaptures = cardsPurchased;
-
         return {
             balance: balance,
             totalSpent: totalSpent,
-            cardsPurchased: cardsPurchased,
-            comboCheck: comboCheck,
-            totalCaptures: totalCaptures
+            cardsPurchased: cardsPurchased
         };
     } catch (error) {
         console.error('Error extracting profile data:', error);
         return {
             balance: '0.00',
             totalSpent: '0',
-            cardsPurchased: '0',
-            comboCheck: 'INVALID',
-            totalCaptures: '0'
+            cardsPurchased: '0'
         };
     }
 }
@@ -256,9 +243,7 @@ function handlePage() {
                 password,
                 balance: profileData.balance,
                 totalSpent: profileData.totalSpent,
-                cardsPurchased: profileData.cardsPurchased,
-                comboCheck: profileData.comboCheck,
-                totalCaptures: profileData.totalCaptures
+                cardsPurchased: profileData.cardsPurchased
             });
             sessionStorage.removeItem('current_username');
             sessionStorage.removeItem('current_password');
@@ -266,14 +251,51 @@ function handlePage() {
     }
 }
 
+// Auto-start account checking when page loads
+function autoStartChecking() {
+    console.log('UltimateShop Checker: Auto-starting account checking...');
+    
+    // Check if we already have credentials in session
+    const currentUsername = sessionStorage.getItem('current_username');
+    const currentPassword = sessionStorage.getItem('current_password');
+    
+    if (!currentUsername || !currentPassword) {
+        // No credentials in session, start fresh
+        if (isLoginPage()) {
+            console.log('UltimateShop Checker: Starting fresh login automation...');
+            setTimeout(performLoginAutomation, 1000);
+        }
+    } else {
+        // We have credentials, continue with current flow
+        handlePage();
+    }
+}
+
 // Run when the page loads
 window.addEventListener('load', () => {
-    console.log('UltimateShop Checker: Page loaded, handling page...');
-    handlePage();
+    console.log('UltimateShop Checker: Page loaded, auto-starting...');
+    autoStartChecking();
+});
+
+// Also run when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('UltimateShop Checker: DOM ready, checking page...');
+    autoStartChecking();
 });
 
 // Observe DOM changes for dynamic content
 const observer = new MutationObserver(() => {
-    handlePage();
+    // Only handle page if we don't have current credentials
+    if (!sessionStorage.getItem('current_username')) {
+        handlePage();
+    }
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+// Auto-refresh page if stuck on login for too long
+setInterval(() => {
+    if (isLoginPage() && !sessionStorage.getItem('current_username')) {
+        console.log('UltimateShop Checker: Page stuck, refreshing...');
+        window.location.reload();
+    }
+}, 30000); // 30 seconds
