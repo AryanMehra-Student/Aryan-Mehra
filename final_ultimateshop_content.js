@@ -61,9 +61,21 @@ function isLoginPage() {
 
 // Check if we're on the success page (after login)
 function isSuccessPage() {
-    return window.location.href.includes('/news') || 
-           document.body.innerText.includes('Discount :') ||
-           document.querySelector('a[href="/profile"]') !== null;
+    const currentUrl = window.location.href;
+    const hasNewsUrl = currentUrl.includes('/news');
+    const hasDiscountText = document.body.innerText.includes('Discount :');
+    const hasProfileLink = document.querySelector('a[href="/profile"]') !== null;
+    const hasAddFunds = document.body.innerText.includes('Add Funds');
+    
+    console.log('UltimateShop Checker: Success page detection:', {
+        url: currentUrl,
+        hasNewsUrl,
+        hasDiscountText,
+        hasProfileLink,
+        hasAddFunds
+    });
+    
+    return hasNewsUrl || hasDiscountText || hasProfileLink || hasAddFunds;
 }
 
 // Check if we're on the profile page
@@ -122,6 +134,59 @@ function navigateToProfile() {
         console.log('UltimateShop Checker: Navigating to profile page...');
         window.location.href = 'https://ultimateshop.vc/profile';
     }
+}
+
+// Fallback navigation to profile page
+function navigateToProfileFallback() {
+    console.log('UltimateShop Checker: Using fallback navigation to profile...');
+    
+    // Try multiple fallback methods
+    const methods = [
+        () => {
+            // Method 1: History API push
+            try {
+                window.history.pushState({}, '', '/profile');
+                window.location.reload();
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+        () => {
+            // Method 2: Create and click profile link
+            try {
+                const link = document.createElement('a');
+                link.href = '/profile';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+        () => {
+            // Method 3: Force reload with profile URL
+            try {
+                window.location.href = window.location.origin + '/profile';
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+    ];
+    
+    // Try each method
+    for (let i = 0; i < methods.length; i++) {
+        if (methods[i]()) {
+            console.log(`UltimateShop Checker: Fallback navigation method ${i + 1} successful`);
+            return;
+        }
+    }
+    
+    console.log('UltimateShop Checker: All fallback methods failed, refreshing page...');
+    window.location.reload();
 }
 
 // Get error message from the page
@@ -528,11 +593,51 @@ function handlePage() {
         // Clear the checking flag to allow new operations
         isChecking = false;
         
-        // Navigate to profile page after successful login
+        // Try multiple navigation methods
         setTimeout(() => {
-            console.log('UltimateShop Checker: Redirecting to profile page...');
-            window.location.href = 'https://ultimateshop.vc/profile';
-        }, 2000);
+            console.log('UltimateShop Checker: Attempting to navigate to profile...');
+            
+            // Method 1: Direct URL change
+            try {
+                window.location.href = 'https://ultimateshop.vc/profile';
+                console.log('UltimateShop Checker: Navigation method 1: Direct URL change');
+                
+                // Check if navigation was successful after 2 seconds
+                setTimeout(() => {
+                    if (window.location.href.includes('/profile')) {
+                        console.log('UltimateShop Checker: Navigation successful to profile page');
+                    } else {
+                        console.log('UltimateShop Checker: Navigation failed, trying fallback method...');
+                        navigateToProfileFallback();
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.log('UltimateShop Checker: Method 1 failed, trying method 2...');
+                
+                // Method 2: Click profile link if available
+                const profileLink = document.querySelector('a[href="/profile"]');
+                if (profileLink) {
+                    profileLink.click();
+                    console.log('UltimateShop Checker: Navigation method 2: Clicked profile link');
+                } else {
+                    console.log('UltimateShop Checker: Method 2 failed, trying method 3...');
+                    
+                    // Method 3: Use window.location.replace
+                    try {
+                        window.location.replace('https://ultimateshop.vc/profile');
+                        console.log('UltimateShop Checker: Navigation method 3: window.location.replace');
+                    } catch (error2) {
+                        console.log('UltimateShop Checker: All navigation methods failed, refreshing page...');
+                        
+                        // Method 4: Refresh and try again
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    }
+                }
+            }
+        }, 3000); // Increased wait time to 3 seconds
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
