@@ -59,12 +59,11 @@ function isLoginPage() {
 
 // Check if we're on the success page (after login)
 function isSuccessPage() {
-    // Simple check: if we're on /news page, login was successful
-    const currentUrl = window.location.href;
-    const isOnNewsPage = currentUrl.includes('/news');
+    // Old working method: check for "Discount :" text
+    const hasDiscountText = document.body.innerText.includes('Discount :');
     
-    if (isOnNewsPage) {
-        console.log('UltimateShop Checker: SUCCESS: On /news page - login successful!');
+    if (hasDiscountText) {
+        console.log('UltimateShop Checker: SUCCESS KEY FOUND: "Discount :" detected!');
         return true;
     }
     
@@ -719,14 +718,10 @@ function monitorSuccessKey() {
     const checkInterval = setInterval(() => {
         checkCount++;
         
-        // Check for "Shop Rules" element - primary method
-        const shopRulesElement = document.querySelector('h4.modal-title#myLargeModalLabel');
-        const hasShopRules = shopRulesElement && shopRulesElement.textContent.includes('Shop Rules');
-        
-        // Fallback: also check for "Discount :" text
+        // Old working method: check for "Discount :" text
         const hasDiscount = document.body.innerText.includes('Discount :');
         
-        console.log(`UltimateShop Checker: Success key monitoring (${checkCount}/${maxChecks}): "Shop Rules" present = ${hasShopRules}, "Discount :" present = ${hasDiscount}`);
+        console.log(`UltimateShop Checker: Success key monitoring (${checkCount}/${maxChecks}): "Discount :" present = ${hasDiscount}`);
         
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);

@@ -100,7 +100,7 @@ python final_ultimateshop_checker.py
 - **Submit**: Complex button selector
 
 ### **3. Success Detection:**
-- **URL**: `/news` redirect + "Shop Rules" element (`<h4 class="modal-title" id="myLargeModalLabel">Shop Rules</h4>`) + "Discount :" text (fallback)
+- **URL**: `/news` redirect + "Discount :" text
 - **Auto-navigate** to `/profile` page
 - **Extract balance data** automatically
 
