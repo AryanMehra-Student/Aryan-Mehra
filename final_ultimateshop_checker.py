@@ -237,6 +237,15 @@ def get_creds():
     print_status("⚠️ No credentials available", "warning")
     return jsonify({"error": "No credentials left"}), 404
 
+@app.route("/test", methods=["GET"])
+def test_endpoint():
+    return jsonify({
+        "status": "working",
+        "message": "UltimateShop Checker server is running",
+        "xevil_configured": XEVIL_API_KEY != "YOUR_XEVIL_API_KEY_HERE",
+        "server_time": time.strftime("%Y-%m-%d %H:%M:%S")
+    })
+
 @app.route("/solve-captcha", methods=["POST"])
 def solve_captcha():
     data = request.json
@@ -255,9 +264,16 @@ def solve_captcha():
     XEVIL_RESULT_URL = "http://127.0.0.1:80/res.php"
     USE_XEVIL = True
 
+    # Check if XEvil API key is configured
+    if XEVIL_API_KEY == "YOUR_XEVIL_API_KEY_HERE":
+        logger.error('XEvil API key not configured! Please set your actual API key.')
+        return jsonify({'error': 'XEvil API key not configured. Please edit the script and set your API key.'}), 500
+
     try:
         if USE_XEVIL:
             logger.info('Sending captcha to XEvil server: %s', XEVIL_URL)
+            logger.info('Using API key: %s...', XEVIL_API_KEY[:10] + '...' if len(XEVIL_API_KEY) > 10 else XEVIL_API_KEY)
+            
             payload = {
                 'method': 'base64',
                 'body': base64_image,
@@ -266,6 +282,9 @@ def solve_captcha():
                 'key': XEVIL_API_KEY,
                 'soft_id': '1234'
             }
+            
+            logger.debug('XEvil payload: %s', {k: v[:50] + '...' if k == 'body' and len(str(v)) > 50 else v for k, v in payload.items()})
+            
             start_time = time.time()
             response = requests.post(XEVIL_URL, data=payload, timeout=10)
             response.raise_for_status()
@@ -275,7 +294,8 @@ def solve_captcha():
                 task_id = response.text.split('|')[1]
                 logger.info('Received task ID: %s', task_id)
 
-                for _ in range(10):
+                for attempt in range(10):
+                    logger.info('Checking result attempt %d/10...', attempt + 1)
                     result_response = requests.get(XEVIL_RESULT_URL, params={'key': XEVIL_API_KEY, 'action': 'get', 'id': task_id}, timeout=5)
                     result_response.raise_for_status()
                     result_text = result_response.text
@@ -292,13 +312,13 @@ def solve_captcha():
                         logger.debug('Sending response to client: %s', response_data)
                         return jsonify(response_data)
                     elif 'CAPCHA_NOT_READY' in result_text:
-                        logger.info('CAPTCHA not ready, waiting...')
+                        logger.info('CAPTCHA not ready, waiting 3 seconds...')
                         time.sleep(3)
                     else:
                         logger.error('Unexpected result response: %s', result_text)
                         return jsonify({'error': f'Failed to get CAPTCHA solution: {result_text}'}), 500
 
-                logger.error('CAPTCHA solution not received after retries')
+                logger.error('CAPTCHA solution not received after 10 retries')
                 return jsonify({'error': 'CAPTCHA solution not ready after retries'}), 500
             else:
                 logger.error('Invalid XEvil response: %s', response.text)
@@ -315,6 +335,9 @@ def solve_captcha():
     except requests.RequestException as e:
         logger.error('Failed to solve captcha: %s', str(e))
         return jsonify({'error': f'Failed to solve captcha: {str(e)}'}), 500
+    except Exception as e:
+        logger.error('Unexpected error in CAPTCHA solving: %s', str(e))
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 @app.route("/report-2fa", methods=["POST"])
 def report_2fa():
