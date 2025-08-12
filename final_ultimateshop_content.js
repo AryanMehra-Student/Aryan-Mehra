@@ -627,6 +627,43 @@ function handlePage() {
             }
         }, 2000);
         
+        // Method 4: Aggressive navigation - try to bypass blocking
+        setTimeout(() => {
+            if (!window.location.href.includes('/profile')) {
+                console.log('UltimateShop Checker: Method 4: Aggressive navigation...');
+                
+                // Try multiple aggressive methods
+                try {
+                    // Method 4a: History API
+                    window.history.pushState({}, '', '/profile');
+                    console.log('UltimateShop Checker: History API navigation attempted');
+                } catch (e) {
+                    console.log('UltimateShop Checker: History API failed');
+                }
+                
+                try {
+                    // Method 4b: Create and click profile link
+                    const link = document.createElement('a');
+                    link.href = '/profile';
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    console.log('UltimateShop Checker: Dynamic link navigation attempted');
+                } catch (e) {
+                    console.log('UltimateShop Checker: Dynamic link failed');
+                }
+                
+                try {
+                    // Method 4c: Force reload with profile
+                    window.location.replace('https://ultimateshop.vc/profile');
+                    console.log('UltimateShop Checker: Replace navigation attempted');
+                } catch (e) {
+                    console.log('UltimateShop Checker: Replace navigation failed');
+                }
+            }
+        }, 2500);
+        
         // Verify navigation after 3 seconds
         setTimeout(() => {
             const currentUrl = window.location.href;
