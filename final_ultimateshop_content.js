@@ -14,6 +14,31 @@ let isWaitingForCaptcha = false;
 let captchaRetryCount = 0;
 let MAX_CAPTCHA_RETRIES = 5; // Maximum 5 CAPTCHA retries per account
 
+// Clear the login form completely
+function clearLoginForm() {
+    const usernameInput = document.querySelector('#LoginForm_username');
+    const passwordInput = document.querySelector('#LoginForm_password');
+    const captchaInput = document.querySelector('#LoginForm_verifyCode');
+    
+    if (usernameInput) usernameInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+    if (captchaInput) captchaInput.value = '';
+    
+    console.log('UltimateShop Checker: Login form cleared');
+}
+
+// Check if form has old data that needs clearing
+function needsFormClearing() {
+    const usernameInput = document.querySelector('#LoginForm_username');
+    const passwordInput = document.querySelector('#LoginForm_password');
+    const captchaInput = document.querySelector('#LoginForm_verifyCode');
+    
+    // If any field has data, we need to clear
+    return (usernameInput && usernameInput.value) || 
+           (passwordInput && passwordInput.value) || 
+           (captchaInput && captchaInput.value);
+}
+
 // Check if we're on the login page
 function isLoginPage() {
     return window.location.href.includes('ultimateshop.vc') && 
@@ -284,6 +309,9 @@ function handlePage() {
                     sessionStorage.removeItem('current_username');
                     sessionStorage.removeItem('current_password');
                     
+                    // Clear the form completely before refresh
+                    clearLoginForm();
+                    
                     // Refresh tab to get fresh CAPTCHA
                     setTimeout(() => {
                         console.log('UltimateShop Checker: Refreshing tab to get fresh CAPTCHA (retry', captchaRetryCount, 'of', MAX_CAPTCHA_RETRIES, ')...');
@@ -312,7 +340,17 @@ function handlePage() {
                 setTimeout(performLoginAutomation, 1000);
             }
         } else {
-            performLoginAutomation();
+            // Check if form needs clearing first
+            if (needsFormClearing()) {
+                console.log('UltimateShop Checker: Form has old data, clearing first...');
+                clearLoginForm();
+                // Wait a bit for form to clear, then start automation
+                setTimeout(() => {
+                    performLoginAutomation();
+                }, 1000);
+            } else {
+                performLoginAutomation();
+            }
         }
     } else if (isSuccessPage()) {
         console.log('UltimateShop Checker: Login successful! Navigating to profile...');
@@ -346,29 +384,37 @@ function handlePage() {
     }
 }
 
-// Auto-start account checking when page loads
+// Auto-start checking when page loads
 function autoStartChecking() {
-    console.log('UltimateShop Checker: Auto-starting account checking...');
+    console.log('UltimateShop Checker: Auto-starting...');
     
-    // Check if we already have credentials in session
-    const currentUsername = sessionStorage.getItem('current_username');
-    const currentPassword = sessionStorage.getItem('current_password');
-    
-    if (!currentUsername || !currentPassword) {
-        // No credentials in session, start fresh
-        if (isLoginPage()) {
-            console.log('UltimateShop Checker: Starting fresh login automation...');
-            setTimeout(performLoginAutomation, 1000);
+    // Check if we're on login page and form is clean
+    if (isLoginPage()) {
+        // Check if form needs clearing first
+        if (needsFormClearing()) {
+            console.log('UltimateShop Checker: Form has old data on auto-start, clearing first...');
+            clearLoginForm();
+            // Wait for form to clear, then start
+            setTimeout(() => {
+                performLoginAutomation();
+            }, 1500);
+        } else {
+            performLoginAutomation();
         }
     } else {
-        // We have credentials, continue with current flow
-        handlePage();
+        console.log('UltimateShop Checker: Not on login page, waiting...');
     }
 }
 
 // Run when the page loads
 window.addEventListener('load', () => {
-    console.log('UltimateShop Checker: Page loaded, auto-starting...');
+    console.log('UltimateShop Checker: Page loaded, checking form state...');
+    
+    // Clear form if it has old data
+    if (isLoginPage() && needsFormClearing()) {
+        console.log('UltimateShop Checker: Clearing old form data on page load...');
+        clearLoginForm();
+    }
     
     // Auto-start checking after page loads
     setTimeout(() => {
@@ -378,7 +424,14 @@ window.addEventListener('load', () => {
 
 // Also run when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('UltimateShop Checker: DOM ready, checking page...');
+    console.log('UltimateShop Checker: DOM ready, checking form state...');
+    
+    // Clear form if it has old data
+    if (isLoginPage() && needsFormClearing()) {
+        console.log('UltimateShop Checker: Clearing old form data on DOM ready...');
+        clearLoginForm();
+    }
+    
     autoStartChecking();
 });
 
