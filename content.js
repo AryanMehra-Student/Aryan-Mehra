@@ -387,16 +387,12 @@ function getErrorMessage() {
             return 'Incorrect username or password';
         } else if (text.includes('The verification code is incorrect')) {
             return 'The verification code is incorrect';
-        } else if (text.includes('BANNED') || text.includes('banned') || text.includes('Banned')) {
-            return 'BANNED';
-        } else if (text.includes('confirm') || text.includes('maintenance')) {
-            return 'SITE_ISSUE';
         }
     }
     
-    // Also check body text for BANNED
+    // Only check for BANNED if it's very specific
     const bodyText = document.body.innerText;
-    if (bodyText.includes('BANNED') || bodyText.includes('banned') || bodyText.includes('Banned')) {
+    if (bodyText.includes('BANNED') && bodyText.includes('account')) {
         return 'BANNED';
     }
     
@@ -405,12 +401,18 @@ function getErrorMessage() {
 
 // Handle navigation and login based on the current page
 function handlePage() {
+    console.log('UltimateShop Checker: handlePage called');
     console.log('UltimateShop Checker: Current URL:', window.location.href);
+    console.log('UltimateShop Checker: isLoginPage():', isLoginPage());
+    console.log('UltimateShop Checker: isSuccessPage():', isSuccessPage());
+    console.log('UltimateShop Checker: isProfilePage():', isProfilePage());
     
     if (isLoginPage()) {
         console.log('UltimateShop Checker: Handling login page...');
         
         const error = getErrorMessage();
+        console.log('UltimateShop Checker: Error detected:', error);
+        
         if (error) {
             if (error === 'BANNED') {
                 console.log('UltimateShop Checker: Account BANNED, skipping...');
@@ -428,8 +430,11 @@ function handlePage() {
                     sessionStorage.removeItem('current_password');
                 }
                 
-                // Try next account
-                setTimeout(performLoginAutomation, 1000);
+                // Clear form and refresh for next account
+                clearLoginForm();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
                 
             } else if (error === 'SITE_ISSUE') {
                 console.log('UltimateShop Checker: Site issue detected, refreshing...');
@@ -605,7 +610,7 @@ function autoStartChecking() {
 
 // Run when the page loads
 window.addEventListener('load', () => {
-    console.log('UltimateShop Checker: Page loaded, checking form state...');
+    console.log('UltimateShop Checker: Page loaded, starting...');
     
     // Clear form if it has old data
     if (isLoginPage() && needsFormClearing()) {
@@ -619,18 +624,18 @@ window.addEventListener('load', () => {
     }, 2000);
 });
 
-// Also run when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('UltimateShop Checker: DOM ready, checking form state...');
-    
-    // Clear form if it has old data
-    if (isLoginPage() && needsFormClearing()) {
-        console.log('UltimateShop Checker: Clearing old form data on DOM ready...');
-        clearLoginForm();
-    }
-    
-    autoStartChecking();
-});
+// Remove duplicate DOM ready listener to prevent conflicts
+// document.addEventListener('DOMContentLoaded', () => {
+//     console.log('UltimateShop Checker: DOM ready, checking form state...');
+//     
+//     // Clear form if it has old data
+//     if (isLoginPage() && needsFormClearing()) {
+//         console.log('UltimateShop Checker: Clearing old form data on DOM ready...');
+//         clearLoginForm();
+//     }
+//     
+//     autoStartChecking();
+// });
 
 // Observe DOM changes for dynamic content
 const observer = new MutationObserver(() => {
