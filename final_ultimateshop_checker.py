@@ -237,15 +237,6 @@ def get_creds():
     print_status("⚠️ No credentials available", "warning")
     return jsonify({"error": "No credentials left"}), 404
 
-@app.route("/test", methods=["GET"])
-def test_endpoint():
-    return jsonify({
-        "status": "working",
-        "message": "UltimateShop Checker server is running",
-        "xevil_configured": XEVIL_API_KEY != "YOUR_XEVIL_API_KEY_HERE",
-        "server_time": time.strftime("%Y-%m-%d %H:%M:%S")
-    })
-
 @app.route("/solve-captcha", methods=["POST"])
 def solve_captcha():
     data = request.json
@@ -419,25 +410,6 @@ def report_fail():
         print_status(f"{Fore.RED}Made By 🔥 @AliveRishu 🔥", "error")
         
         return jsonify({"status": "success", "message": "Fail reported"})
-    
-    return jsonify({"status": "error", "message": "Missing username or password"}), 400
-
-@app.route('/report-banned', methods=['POST'])
-def report_banned():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    
-    if username and password:
-        # Save to banned.txt
-        banned_file = os.path.join(HIT_FOLDER, "banned.txt")
-        with open(banned_file, "a", encoding='utf-8') as f:
-            f.write(f"{username}:{password}\n")
-        
-        print_status(f"{Fore.RED}[ BANNED ] | {username}:{password}", "error")
-        print_status(f"{Fore.RED}Made By 🔥 @AliveRishu 🔥", "error")
-        
-        return jsonify({"status": "success", "message": "Banned account reported"})
     
     return jsonify({"status": "error", "message": "Missing username or password"}), 400
 

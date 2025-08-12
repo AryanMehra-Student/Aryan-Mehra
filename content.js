@@ -59,11 +59,12 @@ function isLoginPage() {
 
 // Check if we're on the success page (after login)
 function isSuccessPage() {
-    // Simple and reliable: just check if URL contains /news
+    // Simple working method: check for /news URL + "Discount :" text
     const hasNewsUrl = window.location.href.includes('/news');
+    const hasDiscountText = document.body.innerText.includes('Discount :');
     
-    if (hasNewsUrl) {
-        console.log('UltimateShop Checker: SUCCESS DETECTED: URL contains /news');
+    if (hasNewsUrl && hasDiscountText) {
+        console.log('UltimateShop Checker: SUCCESS KEY FOUND: /news + "Discount :" detected!');
         return true;
     }
     
@@ -298,17 +299,6 @@ function isCaptchaVisible() {
            captchaImg.offsetHeight > 0;
 }
 
-// Handle confirm button if present
-function handleConfirmButton() {
-    const confirmButton = document.querySelector('button[type="submit"], input[type="submit"], .btn');
-    if (confirmButton) {
-        console.log('UltimateShop Checker: Found confirm button, clicking...');
-        confirmButton.click();
-        return true;
-    }
-    return false;
-}
-
 // Perform the full login automation on the login page
 async function performLoginAutomation() {
     if (isChecking) {
@@ -390,62 +380,19 @@ function getErrorMessage() {
         }
     }
     
-    // Only check for BANNED if it's very specific
-    const bodyText = document.body.innerText;
-    if (bodyText.includes('BANNED') && bodyText.includes('account')) {
-        return 'BANNED';
-    }
-    
     return null;
 }
 
 // Handle navigation and login based on the current page
 function handlePage() {
-    console.log('UltimateShop Checker: handlePage called');
     console.log('UltimateShop Checker: Current URL:', window.location.href);
-    console.log('UltimateShop Checker: isLoginPage():', isLoginPage());
-    console.log('UltimateShop Checker: isSuccessPage():', isSuccessPage());
-    console.log('UltimateShop Checker: isProfilePage():', isProfilePage());
     
     if (isLoginPage()) {
         console.log('UltimateShop Checker: Handling login page...');
         
         const error = getErrorMessage();
-        console.log('UltimateShop Checker: Error detected:', error);
-        
         if (error) {
-            if (error === 'BANNED') {
-                console.log('UltimateShop Checker: Account BANNED, skipping...');
-                
-                // Report as BANNED
-                const username = sessionStorage.getItem('current_username');
-                const password = sessionStorage.getItem('current_password');
-                if (username && password) {
-                    chrome.runtime.sendMessage({
-                        type: 'banned_detected',
-                        username,
-                        password
-                    });
-                    sessionStorage.removeItem('current_username');
-                    sessionStorage.removeItem('current_password');
-                }
-                
-                // Clear form and refresh for next account
-                clearLoginForm();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-                
-            } else if (error === 'SITE_ISSUE') {
-                console.log('UltimateShop Checker: Site issue detected, refreshing...');
-                
-                // Refresh to resolve site issue
-                setTimeout(() => {
-                    console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
-                    window.location.reload();
-                }, 2000);
-                
-            } else if (error === 'The verification code is incorrect') {
+            if (error === 'The verification code is incorrect') {
                 console.log('UltimateShop Checker: CAPTCHA incorrect, attempt:', captchaRetryCount + 1, 'of', MAX_CAPTCHA_RETRIES);
                 
                 // Check if we've exceeded max retries
@@ -623,19 +570,6 @@ window.addEventListener('load', () => {
         autoStartChecking();
     }, 2000);
 });
-
-// Remove duplicate DOM ready listener to prevent conflicts
-// document.addEventListener('DOMContentLoaded', () => {
-//     console.log('UltimateShop Checker: DOM ready, checking form state...');
-//     
-//     // Clear form if it has old data
-//     if (isLoginPage() && needsFormClearing()) {
-//         console.log('UltimateShop Checker: Clearing old form data on DOM ready...');
-//         clearLoginForm();
-//     }
-//     
-//     autoStartChecking();
-// });
 
 // Observe DOM changes for dynamic content
 const observer = new MutationObserver(() => {
