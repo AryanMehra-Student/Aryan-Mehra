@@ -127,7 +127,9 @@ function extractProfileData() {
         return {
             balance: '0.00',
             totalSpent: '0',
-            cardsPurchased: '0'
+            cardsPurchased: '0',
+            comboCheck: 'INVALID',
+            totalCaptures: '0'
         };
     }
 }
@@ -431,18 +433,13 @@ function handlePage() {
                 setTimeout(performLoginAutomation, 1000);
                 
             } else if (error === 'SITE_ISSUE') {
-                console.log('UltimateShop Checker: Site issue detected, trying to resolve...');
+                console.log('UltimateShop Checker: Site issue detected, refreshing...');
                 
-                // Try to handle site issue
-                if (handleConfirmButton()) {
-                    return;
-                } else {
-                    // If can't resolve, refresh and retry
-                    setTimeout(() => {
-                        console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
-                        window.location.reload();
-                    }, 2000);
-                }
+                // Refresh to resolve site issue
+                setTimeout(() => {
+                    console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
+                    window.location.reload();
+                }, 2000);
                 
             } else if (error === 'The verification code is incorrect') {
                 console.log('UltimateShop Checker: CAPTCHA incorrect, attempt:', captchaRetryCount + 1, 'of', MAX_CAPTCHA_RETRIES);

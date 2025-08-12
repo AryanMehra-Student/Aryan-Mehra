@@ -1,174 +1,210 @@
-# 🚀 UltimateShop Checker - Complete Account Checking System
+# UltimateShop Checker - Complete System
 
-## 🎯 **Overview:**
-A comprehensive Chrome extension and Flask server system for automated account checking on `ultimateshop.vc`. Features beautiful UI, multiple tabs support, and complete balance capture system.
+A powerful Chrome extension and Flask server system for checking UltimateShop accounts with balance capture, CAPTCHA solving, and multiple tabs support.
 
-## 🏗️ **System Architecture:**
+## 🚀 Features
 
-### **1. Chrome Extension:**
-- **`final_ultimateshop_manifest.json`** - Extension configuration
-- **`final_ultimateshop_content.js`** - Main automation logic
-- **`final_ultimateshop_background.js`** - Background service worker
+- **Multiple Tabs Support**: Check multiple accounts simultaneously in different tabs
+- **Automatic CAPTCHA Solving**: Integrated with XEvil for seamless CAPTCHA handling
+- **Balance Capture**: Automatically extracts balance, total spent, and cards purchased
+- **Smart Retry Logic**: Retries failed CAPTCHAs up to 5 times per account
+- **Account Classification**: Automatically categorizes accounts as HIT, CUSTOM, FAIL, or BANNED
+- **Beautiful UI**: Colorful console output with ASCII art banner
+- **File Selection**: Tkinter-based file selection dialog for accounts file
+- **Auto-refresh**: Automatically refreshes tabs for continuous checking
 
-### **2. Flask Server (`final_ultimateshop_checker.py`):**
-- **Manages account lists** with Tkinter file dialog
-- **Handles CAPTCHA solving** via XEvil integration
-- **Reports different account types** (HIT, CUSTOM, FAIL, 2FA, unactivated)
-- **Saves results** to organized files with professional display
-- **Beautiful UI** with ASCII banner and colored logging
+## 📁 File Structure
 
-## 🚀 **Key Features:**
+```
+UltimateShop-Checker/
+├── manifest.json              # Chrome extension manifest
+├── content.js                 # Main content script for website interaction
+├── background.js              # Background service worker
+├── final_ultimateshop_checker.py  # Flask server with UI
+├── README.md                  # This documentation
+└── hit/                       # Results folder (auto-created)
+    ├── hit.txt               # Successful accounts with balance
+    ├── custom.txt            # Free accounts (0.00 balance)
+    ├── fail.txt              # Failed login attempts
+    ├── banned.txt            # Banned accounts
+    ├── 2fa-hit.txt          # 2FA protected accounts
+    └── free.txt              # Unactivated accounts
+```
 
-### **✅ Complete Automation:**
-- **Automatic login** on ultimateshop.vc
-- **CAPTCHA solving** via XEvil
-- **Balance extraction** from profile page
-- **Multiple tabs support** for parallel processing
+## 🛠️ Setup Instructions
 
-### **🎨 Professional UI:**
-- **Mixed-color ASCII banner**
-- **Tkinter file selection dialog**
-- **Interactive menu system**
-- **Real-time colored logging** with emojis
-- **@AliveRishu branding**
+### 1. Install Dependencies
 
-### **💰 Smart Classification:**
-- **HIT** (Green) - Balance > 0.00
-- **CUSTOM** (Yellow) - Balance = 0.00 (Free hits)
-- **FAIL** (Red) - Login failed
-- **2FA** - Two-factor authentication
-- **Unactivated** - Inactive accounts
-
-### **📊 Data Capture:**
-- **Current Balance** from profile page
-- **Total Spent** tracking
-- **Cards Purchased** count
-- **Automatic profile navigation**
-
-## 🔧 **Setup Instructions:**
-
-### **Step 1: Install Dependencies**
 ```bash
-pip install -r requirements.txt
+pip install flask flask-cors requests colorama
 ```
 
-### **Step 2: Create Extension Folder**
-```
-ultimateshop_extension/
-├── manifest.json        # Copy from final_ultimateshop_manifest.json
-├── content.js          # Copy from final_ultimateshop_content.js
-└── background.js       # Copy from final_ultimateshop_background.js
+### 2. Configure XEvil API Key
+
+Edit `final_ultimateshop_checker.py` and replace:
+```python
+XEVIL_API_KEY = "YOUR_XEVIL_API_KEY_HERE"
 ```
 
-### **Step 3: Install Chrome Extension**
-1. Go to `chrome://extensions/`
+### 3. Load Chrome Extension
+
+1. Open Chrome and go to `chrome://extensions/`
 2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select `ultimateshop_extension` folder
+3. Click "Load unpacked" and select the folder containing the extension files
+4. The extension will appear as "UltimateShop Checker"
 
-### **Step 4: Start UltimateShop Checker**
+### 4. Start the Server
+
 ```bash
 python final_ultimateshop_checker.py
 ```
 
-### **Step 5: Open Multiple Tabs**
-1. **Open multiple tabs** with `https://ultimateshop.vc/`
-2. **Each tab** will work independently
-3. **Extension activates** on all tabs
-4. **Parallel checking** across all tabs
+### 5. Use the System
 
-## 📁 **File Organization:**
+1. Select your accounts file using the Tkinter dialog
+2. Open multiple tabs with `https://ultimateshop.vc`
+3. The extension will automatically start checking accounts in each tab
+4. Results are displayed in real-time and saved to appropriate files
 
-### **Result Files:**
-- **`hit.txt`** - Regular hits with balance
-- **`custom.txt`** - Free hits (balance 0.00)
-- **`fail.txt`** - Failed accounts
-- **`2fa-hit.txt`** - 2FA accounts
-- **`free.txt`** - Unactivated accounts
+## 🔧 How It Works
 
-## 🎯 **How It Works:**
+### Content Script (`content.js`)
+- Detects login page and automatically fills credentials
+- Captures and solves CAPTCHAs using XEvil
+- Handles login success/failure detection
+- Navigates to profile page to extract balance data
+- Sends results to background script
 
-### **1. Extension Detection:**
-- **Automatically activates** on all ultimateshop.vc tabs
-- **Each tab** gets different account credentials
-- **Parallel processing** across multiple tabs
+### Background Script (`background.js`)
+- Manages communication between content script and Flask server
+- Handles cookie clearing and tab refresh
+- Reports results to server endpoints
+- Manages service worker lifecycle
 
-### **2. Login Process:**
-- **Username**: `#LoginForm_username`
-- **Password**: `#LoginForm_password`
-- **CAPTCHA**: `#LoginForm_verifyCode`
-- **Submit**: Complex button selector
+### Flask Server (`final_ultimateshop_checker.py`)
+- Provides credentials to extension
+- Solves CAPTCHAs via XEvil API
+- Receives and processes results
+- Saves accounts to categorized files
+- Beautiful console UI with colorama
 
-### **3. Success Detection:**
-- **URL**: `/news` redirect + "Discount :" text
-- **Auto-navigate** to `/profile` page
-- **Extract balance data** automatically
+## 📊 Account Types & Display
 
-### **4. Balance Capture:**
-- **Current Balance**: `<td>Current balance:</td>` → `<td>0.00 $</td>`
-- **Total Spent**: `<td>Total spent:</td>` → `<td>0 $</td>`
-- **Cards Purchased**: `<td>Cards purchased:</td>` → `<td>0</td>`
-
-### **5. Account Classification:**
-- **Balance > 0.00** → HIT (Green)
-- **Balance = 0.00** → CUSTOM (Yellow)
-- **Login failed** → FAIL (Red)
-
-## 🚀 **Display System:**
-
-### **✅ HIT (Green Color):**
+### HIT (Green)
 ```
-[ HIT ] | username:password | Balance : $150.50 | Total Spent : $500 | Cards : 25
+[ HIT ] | username:password | Balance : $X | Total Spent : $Y | Cards : Z
 Made By 🔥 @AliveRishu 🔥
 ```
 
-### **🟡 CUSTOM/FREE (Yellow Color):**
+### CUSTOM/FREE (Yellow)
 ```
 [ CUSTOM ] | username:password | Balance : 0.00 | Total Spent : $0 | Cards : 0
 Made By 🔥 @AliveRishu 🔥
 ```
 
-### **🔴 FAIL (Red Color):**
+### FAIL (Red)
 ```
 [ FAIL ] | username:password
 Made By 🔥 @AliveRishu 🔥
 ```
 
-## ⚠️ **Requirements:**
+### BANNED (Red)
+```
+[ BANNED ] | username:password
+Made By 🔥 @AliveRishu 🔥
+```
 
-### **System:**
-- **Python 3.7+**
-- **Chrome/Chromium browser**
-- **XEvil CAPTCHA solver** (localhost:80)
+## 🔄 CAPTCHA Handling
 
-### **Files:**
-- **Accounts.txt** in username:password format
-- **No email usernames**
-- **No number-only passwords**
+- **Automatic Solving**: Uses XEvil API for CAPTCHA resolution
+- **Retry Logic**: Retries failed CAPTCHAs up to 5 times per account
+- **Fresh CAPTCHA**: Refreshes page to get new CAPTCHA on failures
+- **Failure Handling**: Closes tab and clears cookies after max attempts
 
-## 🎉 **Ready to Use!**
+## 🌐 Multiple Tabs Support
 
-**Your UltimateShop Checker is complete with:**
+- **Manual Tab Control**: User opens tabs manually (no automatic tab creation)
+- **Parallel Processing**: Each tab processes different accounts simultaneously
+- **Auto-refresh**: Tabs automatically refresh after each account completion
+- **Cookie Isolation**: Each tab maintains separate session state
 
-1. **Epic ASCII banner** 🎨
-2. **Tkinter file dialog** 📁
-3. **Professional UI** ✨
-4. **Complete automation** 🚀
-5. **Beautiful logging** 📊
-6. **Balance capture** 💰
-7. **Stylish branding** 🔥
-8. **Multiple tabs support** 📱
+## 📝 Success Detection
 
-**Just run `python final_ultimateshop_checker.py` and open multiple tabs!** 🎯
+The system detects successful login by checking for:
+- URL contains `/news`
+- Page text contains "Discount :"
 
-## 🆘 **Support:**
+This combination reliably identifies successful login on UltimateShop.
 
-- **Check console logs** for errors
-- **Verify XEvil** is running
-- **Ensure file format** is correct
-- **Monitor server status** at localhost:5050
-- **Open multiple tabs** for parallel checking
+## 🚨 Error Handling
 
-**Happy account checking with multiple tabs!** 🚀💰📱
+- **CAPTCHA Errors**: Automatic retry with fresh CAPTCHA
+- **Login Failures**: Immediate reporting and next account
+- **Banned Accounts**: Detection and separate logging
+- **Site Issues**: Automatic page refresh and retry
+- **Network Errors**: Graceful fallback and retry mechanisms
 
-## 🔥 **Made By @AliveRishu 🔥**
+## 🔑 Security Features
+
+- **Cookie Management**: Automatic clearing after each account
+- **Session Isolation**: Separate sessions for each tab
+- **Secure Communication**: Localhost-only server communication
+- **Input Validation**: Robust credential format validation
+
+## 📈 Performance Features
+
+- **Efficient Processing**: Minimal delays between operations
+- **Memory Management**: Proper cleanup of session data
+- **Error Recovery**: Automatic recovery from various failure modes
+- **Logging**: Comprehensive logging for debugging
+
+## 🎯 Usage Tips
+
+1. **Multiple Tabs**: Open 3-5 tabs for optimal performance
+2. **Account Format**: Ensure accounts are in `username:password` format
+3. **XEvil Setup**: Make sure XEvil is running on localhost:80
+4. **File Encoding**: Use UTF-8 encoding for accounts file
+5. **Regular Monitoring**: Check console output for real-time status
+
+## 🐛 Troubleshooting
+
+### Extension Not Working
+- Check if extension is loaded in Chrome
+- Verify manifest.json file paths
+- Check browser console for errors
+
+### CAPTCHA Solving Issues
+- Verify XEvil API key is correct
+- Ensure XEvil server is running
+- Check network connectivity
+
+### Server Connection Issues
+- Verify Flask server is running on port 5050
+- Check firewall settings
+- Ensure localhost access is allowed
+
+## 🔄 Updates & Maintenance
+
+- **Regular Updates**: Keep XEvil updated for best CAPTCHA solving
+- **Account Validation**: Regularly validate account file format
+- **Performance Monitoring**: Monitor server performance and adjust as needed
+- **Error Logging**: Review logs for pattern identification
+
+## 📞 Support
+
+For issues or questions:
+- Check the console output for detailed error messages
+- Review the logging information in the Flask server
+- Ensure all dependencies are properly installed
+- Verify file paths and permissions
+
+## 🎉 Credits
+
+**Developer**: @AliveRishu  
+**System**: UltimateShop Checker  
+**Version**: 1.0 Final  
+**Status**: Production Ready ✅
+
+---
+
+**Made with 🔥 by @AliveRishu 🔥**
