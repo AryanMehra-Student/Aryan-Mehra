@@ -163,6 +163,149 @@ async function retryWithNewCaptcha() {
     }
 }
 
+// Wait for CAPTCHA image to appear with retry mechanism
+function waitForCaptcha(maxAttempts = 10, interval = 1000) {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        
+        const checkCaptcha = () => {
+            attempts++;
+            console.log(`UltimateShop Checker: Checking for CAPTCHA image (attempt ${attempts}/${maxAttempts})...`);
+            
+            // Try multiple selectors for CAPTCHA
+            const captchaImg = document.querySelector('#yw0') || 
+                              document.querySelector('img[src*="captcha"]') ||
+                              document.querySelector('img[src*="verify"]') ||
+                              document.querySelector('.captcha img') ||
+                              document.querySelector('img[alt*="captcha"]') ||
+                              document.querySelector('img[alt*="verify"]');
+            
+            if (captchaImg && captchaImg.src && captchaImg.src !== '') {
+                console.log('UltimateShop Checker: CAPTCHA image found!');
+                resolve(captchaImg);
+                return;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.log('UltimateShop Checker: CAPTCHA image not found after max attempts');
+                reject(new Error('CAPTCHA image not found'));
+                return;
+            }
+            
+            // Wait and try again
+            setTimeout(checkCaptcha, interval);
+        };
+        
+        checkCaptcha();
+    });
+}
+
+// Get CAPTCHA with enhanced detection
+async function getCaptcha() {
+    try {
+        console.log('UltimateShop Checker: Waiting for CAPTCHA image...');
+        
+        // Wait for CAPTCHA to appear
+        const captchaImg = await waitForCaptcha(15, 800); // 15 attempts, 800ms intervals
+        
+        if (!captchaImg || !captchaImg.src) {
+            throw new Error('CAPTCHA image not available');
+        }
+        
+        // Check if image is actually loaded
+        if (captchaImg.complete && captchaImg.naturalWidth > 0) {
+            console.log('UltimateShop Checker: CAPTCHA image fully loaded');
+        } else {
+            // Wait for image to load
+            await new Promise((resolve) => {
+                captchaImg.onload = resolve;
+                captchaImg.onerror = () => resolve(); // Continue even if error
+                // Timeout after 3 seconds
+                setTimeout(resolve, 3000);
+            });
+        }
+        
+        // Convert to base64
+        const canvas = document.createElement('canvas');
+        canvas.width = captchaImg.width;
+        canvas.height = captchaImg.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(captchaImg, 0, 0);
+        const base64Image = canvas.toDataURL().split(',')[1];
+        
+        console.log('UltimateShop Checker: CAPTCHA captured, solving...');
+        
+        // Solve CAPTCHA
+        const response = await fetch('http://localhost:5050/solve-captcha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Image })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to solve CAPTCHA');
+        }
+        
+        const { captcha: solvedCaptcha } = await response.json();
+        console.log('UltimateShop Checker: CAPTCHA solved:', solvedCaptcha);
+        
+        // Fill CAPTCHA input
+        const captchaInput = document.querySelector('#LoginForm_verifyCode');
+        if (captchaInput) {
+            captchaInput.value = solvedCaptcha;
+            captchaInput.dispatchEvent(new Event('input', { bubbles: true }));
+            console.log('UltimateShop Checker: CAPTCHA filled in form');
+        }
+        
+        return solvedCaptcha;
+        
+    } catch (error) {
+        console.error('UltimateShop Checker: Error getting CAPTCHA:', error);
+        
+        // If CAPTCHA fails, try to refresh and retry
+        if (error.message.includes('CAPTCHA image not found')) {
+            console.log('UltimateShop Checker: CAPTCHA not found, refreshing page...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+        
+        return null;
+    }
+}
+
+// Refresh CAPTCHA if needed
+function refreshCaptcha() {
+    const captchaImg = document.querySelector('#yw0') || 
+                      document.querySelector('img[src*="captcha"]') ||
+                      document.querySelector('img[src*="verify"]');
+    
+    if (captchaImg) {
+        // Force refresh by adding timestamp to src
+        const currentSrc = captchaImg.src;
+        const separator = currentSrc.includes('?') ? '&' : '?';
+        captchaImg.src = currentSrc + separator + 't=' + Date.now();
+        console.log('UltimateShop Checker: CAPTCHA refreshed');
+    }
+}
+
+// Check if CAPTCHA is visible and working
+function isCaptchaVisible() {
+    const captchaImg = document.querySelector('#yw0') || 
+                      document.querySelector('img[src*="captcha"]') ||
+                      document.querySelector('img[src*="verify"]');
+    
+    if (!captchaImg) return false;
+    
+    // Check if image is loaded and visible
+    return captchaImg.src && 
+           captchaImg.src !== '' && 
+           captchaImg.complete && 
+           captchaImg.naturalWidth > 0 &&
+           captchaImg.offsetWidth > 0 &&
+           captchaImg.offsetHeight > 0;
+}
+
 // Perform the full login automation on the login page
 async function performLoginAutomation() {
     if (isChecking) {
@@ -205,28 +348,23 @@ async function performLoginAutomation() {
         passwordInput.value = password;
         console.log('UltimateShop Checker: Filled username and password.');
 
-        const canvas = document.createElement('canvas');
-        canvas.width = captchaImg.width;
-        canvas.height = captchaImg.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(captchaImg, 0, 0);
-        const base64Image = canvas.toDataURL().split(',')[1];
-
-        const captchaResponse = await fetch('http://localhost:5050/solve-captcha', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64Image })
-        });
-        if (!captchaResponse.ok) throw new Error('Failed to solve CAPTCHA');
-        const { captcha: solvedCaptcha } = await captchaResponse.json();
-
-        captchaInput.value = solvedCaptcha;
-        console.log('UltimateShop Checker: Filled CAPTCHA.');
-
+        // Get and solve CAPTCHA
+        const captchaSolution = await getCaptcha();
+        if (!captchaSolution) {
+            console.log('UltimateShop Checker: Failed to get CAPTCHA, retrying...');
+            isChecking = false;
+            setTimeout(performLoginAutomation, 3000);
+            return;
+        }
+        
+        console.log('UltimateShop Checker: CAPTCHA solved, proceeding with login...');
+        
+        // Wait a bit before submitting
         const delay = getRandomDelay();
         setTimeout(() => {
             submitButton.click();
-            console.log('UltimateShop Checker: Clicked login button.');
+            console.log('UltimateShop Checker: Login button clicked.');
+            isChecking = false;
         }, delay);
     } catch (error) {
         console.error('UltimateShop Checker: Error during login automation:', error);
@@ -399,7 +537,17 @@ function autoStartChecking() {
                 performLoginAutomation();
             }, 1500);
         } else {
-            performLoginAutomation();
+            // Check CAPTCHA state before starting
+            if (!isCaptchaVisible()) {
+                console.log('UltimateShop Checker: CAPTCHA not visible, refreshing...');
+                refreshCaptcha();
+                // Wait for CAPTCHA to load
+                setTimeout(() => {
+                    performLoginAutomation();
+                }, 2000);
+            } else {
+                performLoginAutomation();
+            }
         }
     } else {
         console.log('UltimateShop Checker: Not on login page, waiting...');
