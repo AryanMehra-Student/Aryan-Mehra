@@ -140,12 +140,80 @@
     });
   }
 
+  // Check for error messages on the page
+  function checkForErrors() {
+    const pageText = document.body.innerText;
+    
+    // Check for BANNED response
+    if (pageText.includes("BANNED") || pageText.includes("banned") || pageText.includes("Banned")) {
+      return "BANNED";
+    }
+    
+    // Check for CAPTCHA wrong
+    if (pageText.includes("Your verification code is wrong") || pageText.includes("verification code is incorrect")) {
+      return "CAPTCHA_WRONG";
+    }
+    
+    // Check for incorrect credentials
+    if (pageText.includes("Incorrect username or password")) {
+      return "WRONG_CREDENTIALS";
+    }
+    
+    return null;
+  }
+
   const isLogin = location.pathname === "/login";
   const isNews = location.pathname === "/news";
   const isProfile = location.pathname === "/profile";
 
   if (isLogin) {
     debug("🔑 Login page detected");
+
+    // Check for errors first
+    const error = checkForErrors();
+    if (error) {
+      const creds = JSON.parse(sessionStorage.getItem("lastCreds") || "{}");
+      if (creds.username) {
+        if (error === "BANNED") {
+          debug("🚫 BANNED account detected!");
+          await reportBanned(creds);
+          sessionStorage.removeItem("lastCreds");
+          sessionStorage.removeItem("captchaRetryCount");
+          await sleep(2000);
+          location.reload();
+          return;
+        } else if (error === "CAPTCHA_WRONG") {
+          // IMPROVEMENT: Retry with same account for CAPTCHA wrong
+          let captchaRetryCount = parseInt(sessionStorage.getItem("captchaRetryCount") || "0");
+          const maxCaptchaRetries = 5;
+          
+          if (captchaRetryCount < maxCaptchaRetries) {
+            captchaRetryCount++;
+            sessionStorage.setItem("captchaRetryCount", captchaRetryCount.toString());
+            debug(`🔄 CAPTCHA wrong, retrying with same account (${captchaRetryCount}/${maxCaptchaRetries})...`);
+            await sleep(2000);
+            location.reload();
+            return;
+          } else {
+            debug("❌ Max CAPTCHA retries reached, reporting fail");
+            await reportFail(creds, "Max CAPTCHA retries reached");
+            sessionStorage.removeItem("lastCreds");
+            sessionStorage.removeItem("captchaRetryCount");
+            await sleep(2000);
+            location.reload();
+            return;
+          }
+        } else if (error === "WRONG_CREDENTIALS") {
+          debug("❌ Wrong credentials, reporting fail");
+          await reportFail(creds, "Incorrect username or password");
+          sessionStorage.removeItem("lastCreds");
+          sessionStorage.removeItem("captchaRetryCount");
+          await sleep(2000);
+          location.reload();
+          return;
+        }
+      }
+    }
 
     const creds = await getCreds();
     if (!creds || !creds.username) return;
