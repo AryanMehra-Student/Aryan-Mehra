@@ -12,7 +12,7 @@ let captchaImage = null;
 let captchaSolution = null;
 let isWaitingForCaptcha = false;
 let captchaRetryCount = 0;
-let MAX_CAPTCHA_RETRIES = 3;
+let MAX_CAPTCHA_RETRIES = 5; // Maximum 5 CAPTCHA retries per account
 
 // Check if we're on the login page
 function isLoginPage() {
@@ -132,8 +132,16 @@ async function retryWithNewCaptcha() {
 
 // Perform the full login automation on the login page
 async function performLoginAutomation() {
+    if (isChecking) {
+        console.log('UltimateShop Checker: Already checking, skipping...');
+        return;
+    }
+    
     // Reset CAPTCHA retry counter for new account
     captchaRetryCount = 0;
+    
+    console.log('UltimateShop Checker: Starting login automation...');
+    isChecking = true;
     
     const usernameInput = document.querySelector('#LoginForm_username');
     const passwordInput = document.querySelector('#LoginForm_password');
@@ -212,9 +220,35 @@ function handlePage() {
                 }, 2000);
                 
             } else if (error === 'The verification code is incorrect') {
-                console.log('UltimateShop Checker: CAPTCHA incorrect, retrying with same account...');
+                console.log('UltimateShop Checker: CAPTCHA incorrect, attempt:', captchaRetryCount + 1, 'of', MAX_CAPTCHA_RETRIES);
                 
-                // Keep retrying with same account until successful
+                // Check if we've exceeded max retries
+                if (captchaRetryCount >= MAX_CAPTCHA_RETRIES) {
+                    console.log('UltimateShop Checker: Max CAPTCHA retries reached, trying next account...');
+                    
+                    // Report as FAIL due to CAPTCHA issues
+                    const username = sessionStorage.getItem('current_username');
+                    const password = sessionStorage.getItem('current_password');
+                    if (username && password) {
+                        chrome.runtime.sendMessage({
+                            type: 'fail_detected',
+                            username,
+                            password
+                        });
+                        sessionStorage.removeItem('current_username');
+                        sessionStorage.removeItem('current_password');
+                    }
+                    
+                    // Reset counter and try next account
+                    captchaRetryCount = 0;
+                    setTimeout(performLoginAutomation, 1000);
+                    return;
+                }
+                
+                // Increment retry counter
+                captchaRetryCount++;
+                
+                // Keep retrying with same account
                 const username = sessionStorage.getItem('current_username');
                 const password = sessionStorage.getItem('current_password');
                 
@@ -225,11 +259,12 @@ function handlePage() {
                     
                     // Refresh tab to get fresh CAPTCHA
                     setTimeout(() => {
-                        console.log('UltimateShop Checker: Refreshing tab to get fresh CAPTCHA for same account...');
+                        console.log('UltimateShop Checker: Refreshing tab to get fresh CAPTCHA (retry', captchaRetryCount, 'of', MAX_CAPTCHA_RETRIES, ')...');
                         window.location.reload();
                     }, 1000);
                 } else {
                     // No credentials, try next account
+                    captchaRetryCount = 0;
                     setTimeout(performLoginAutomation, 1000);
                 }
                 
