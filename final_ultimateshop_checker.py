@@ -342,8 +342,8 @@ def report_hit():
         with open(custom_file, "a") as f:
             f.write(f"{username}:{password} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}\n")
         
-        # Display CUSTOM hit with COMBO and CAPTURES
-        print_status(f"{Fore.YELLOW}[ CUSTOM ] [ COMBO: {username}:{password} ] [ CAPTURES: {cardsPurchased} ] {username} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}", "warning")
+        # Display CUSTOM hit with new format
+        print_status(f"{Fore.YELLOW}[ CUSTOM ] | {username}:{password} | Balance : {balance} | Total Spent : {totalSpent} | Cards : {cardsPurchased}", "warning")
         print_status(f"{Fore.YELLOW}Made By 🔥 @AliveRishu 🔥", "warning")
         
     else:
@@ -352,8 +352,8 @@ def report_hit():
         with open(hit_file, "a") as f:
             f.write(f"{username}:{password} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}\n")
         
-        # Display HIT with COMBO and CAPTURES
-        print_status(f"{Fore.GREEN}[ HIT ] [ COMBO: {username}:{password} ] [ CAPTURES: {cardsPurchased} ] {username} | Balance: {balance} | Total Spent: {totalSpent} | Cards: {cardsPurchased}", "success")
+        # Display HIT with new format
+        print_status(f"{Fore.GREEN}[ HIT ] | {username}:{password} | Balance : {balance} | Total Spent : {totalSpent} | Cards : {cardsPurchased}", "success")
         print_status(f"{Fore.GREEN}Made By 🔥 @AliveRishu 🔥", "success")
     
     logger.info('Logged hit: %s', username)
@@ -372,8 +372,8 @@ def report_fail():
     with open(fail_file, "a") as f:
         f.write(f"{username}:{password}\n")
     
-    # Display FAIL with COMBO
-    print_status(f"{Fore.RED}[ FAIL ] [ COMBO: {username}:{password} ] {username}:{password}", "error")
+    # Display FAIL with new format
+    print_status(f"{Fore.RED}[ FAIL ] | {username}:{password}", "error")
     print_status(f"{Fore.RED}Made By 🔥 @AliveRishu 🔥", "error")
     
     logger.info('Logged fail: %s', username)
