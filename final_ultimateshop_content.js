@@ -75,7 +75,14 @@ function isSuccessPage() {
         hasAddFunds
     });
     
-    return hasNewsUrl || hasDiscountText || hasProfileLink || hasAddFunds;
+    // Primary success key: "Discount :" text
+    if (hasDiscountText) {
+        console.log('UltimateShop Checker: SUCCESS KEY FOUND: "Discount :" detected!');
+        return true;
+    }
+    
+    // Secondary checks
+    return hasNewsUrl || hasProfileLink || hasAddFunds;
 }
 
 // Check if we're on the profile page
@@ -588,7 +595,11 @@ function handlePage() {
             }
         }
     } else if (isSuccessPage()) {
-        console.log('UltimateShop Checker: Login successful! Navigating to profile...');
+        console.log('UltimateShop Checker: Login successful! SUCCESS KEY "Discount :" detected!');
+        console.log('UltimateShop Checker: Current page content includes success indicator');
+        
+        // Start monitoring success key
+        addSuccessKeyMonitoring();
         
         // Clear the checking flag to allow new operations
         isChecking = false;
@@ -596,6 +607,13 @@ function handlePage() {
         // Try multiple navigation methods
         setTimeout(() => {
             console.log('UltimateShop Checker: Attempting to navigate to profile...');
+            
+            // Verify success key is still present
+            if (!document.body.innerText.includes('Discount :')) {
+                console.log('UltimateShop Checker: WARNING: Success key "Discount :" not found, but proceeding with navigation...');
+            } else {
+                console.log('UltimateShop Checker: Success key "Discount :" confirmed present, proceeding with navigation...');
+            }
             
             // Method 1: Direct URL change
             try {
@@ -753,3 +771,27 @@ setInterval(() => {
         window.location.reload();
     }
 }, 30000); // 30 seconds
+
+// Monitor success key during navigation
+function monitorSuccessKey() {
+    let checkCount = 0;
+    const maxChecks = 10; // Check for 10 seconds
+    
+    const checkInterval = setInterval(() => {
+        checkCount++;
+        const hasDiscount = document.body.innerText.includes('Discount :');
+        
+        console.log(`UltimateShop Checker: Success key monitoring (${checkCount}/${maxChecks}): "Discount :" present = ${hasDiscount}`);
+        
+        if (checkCount >= maxChecks) {
+            clearInterval(checkInterval);
+            console.log('UltimateShop Checker: Success key monitoring completed');
+        }
+    }, 1000);
+}
+
+// Add success key monitoring to success page handler
+function addSuccessKeyMonitoring() {
+    console.log('UltimateShop Checker: Starting success key monitoring...');
+    monitorSuccessKey();
+}
