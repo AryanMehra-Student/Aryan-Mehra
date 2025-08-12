@@ -598,64 +598,30 @@ function handlePage() {
         console.log('UltimateShop Checker: Login successful! SUCCESS KEY "Discount :" detected!');
         console.log('UltimateShop Checker: Current page content includes success indicator');
         
-        // Start monitoring success key
-        addSuccessKeyMonitoring();
-        
-        // Clear the checking flag to allow new operations
+        // Clear the checking flag immediately
         isChecking = false;
+        console.log('UltimateShop Checker: Checking flag cleared, proceeding with navigation...');
         
-        // Try multiple navigation methods
-        setTimeout(() => {
-            console.log('UltimateShop Checker: Attempting to navigate to profile...');
+        // Navigate immediately without delay
+        console.log('UltimateShop Checker: Navigating to profile page immediately...');
+        
+        try {
+            // Force navigation to profile
+            window.location.href = 'https://ultimateshop.vc/profile';
+            console.log('UltimateShop Checker: Navigation initiated to profile page');
+        } catch (error) {
+            console.error('UltimateShop Checker: Navigation error:', error);
             
-            // Verify success key is still present
-            if (!document.body.innerText.includes('Discount :')) {
-                console.log('UltimateShop Checker: WARNING: Success key "Discount :" not found, but proceeding with navigation...');
+            // Fallback: try to click profile link
+            const profileLink = document.querySelector('a[href="/profile"]');
+            if (profileLink) {
+                console.log('UltimateShop Checker: Trying to click profile link...');
+                profileLink.click();
             } else {
-                console.log('UltimateShop Checker: Success key "Discount :" confirmed present, proceeding with navigation...');
+                console.log('UltimateShop Checker: Profile link not found, refreshing page...');
+                window.location.reload();
             }
-            
-            // Method 1: Direct URL change
-            try {
-                window.location.href = 'https://ultimateshop.vc/profile';
-                console.log('UltimateShop Checker: Navigation method 1: Direct URL change');
-                
-                // Check if navigation was successful after 2 seconds
-                setTimeout(() => {
-                    if (window.location.href.includes('/profile')) {
-                        console.log('UltimateShop Checker: Navigation successful to profile page');
-                    } else {
-                        console.log('UltimateShop Checker: Navigation failed, trying fallback method...');
-                        navigateToProfileFallback();
-                    }
-                }, 2000);
-                
-            } catch (error) {
-                console.log('UltimateShop Checker: Method 1 failed, trying method 2...');
-                
-                // Method 2: Click profile link if available
-                const profileLink = document.querySelector('a[href="/profile"]');
-                if (profileLink) {
-                    profileLink.click();
-                    console.log('UltimateShop Checker: Navigation method 2: Clicked profile link');
-                } else {
-                    console.log('UltimateShop Checker: Method 2 failed, trying method 3...');
-                    
-                    // Method 3: Use window.location.replace
-                    try {
-                        window.location.replace('https://ultimateshop.vc/profile');
-                        console.log('UltimateShop Checker: Navigation method 3: window.location.replace');
-                    } catch (error2) {
-                        console.log('UltimateShop Checker: All navigation methods failed, refreshing page...');
-                        
-                        // Method 4: Refresh and try again
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 2000);
-                    }
-                }
-            }
-        }, 3000); // Increased wait time to 3 seconds
+        }
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
