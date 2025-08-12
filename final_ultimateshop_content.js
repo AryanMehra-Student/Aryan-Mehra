@@ -61,28 +61,14 @@ function isLoginPage() {
 
 // Check if we're on the success page (after login)
 function isSuccessPage() {
-    const currentUrl = window.location.href;
-    const hasNewsUrl = currentUrl.includes('/news');
     const hasDiscountText = document.body.innerText.includes('Discount :');
-    const hasProfileLink = document.querySelector('a[href="/profile"]') !== null;
-    const hasAddFunds = document.body.innerText.includes('Add Funds');
     
-    console.log('UltimateShop Checker: Success page detection:', {
-        url: currentUrl,
-        hasNewsUrl,
-        hasDiscountText,
-        hasProfileLink,
-        hasAddFunds
-    });
-    
-    // Primary success key: "Discount :" text
     if (hasDiscountText) {
         console.log('UltimateShop Checker: SUCCESS KEY FOUND: "Discount :" detected!');
         return true;
     }
     
-    // Secondary checks
-    return hasNewsUrl || hasProfileLink || hasAddFunds;
+    return false;
 }
 
 // Check if we're on the profile page
@@ -595,88 +581,17 @@ function handlePage() {
             }
         }
     } else if (isSuccessPage()) {
-        console.log('UltimateShop Checker: ===== SUCCESS PAGE DETECTED =====');
         console.log('UltimateShop Checker: Login successful! SUCCESS KEY "Discount :" detected!');
         console.log('UltimateShop Checker: Current URL:', window.location.href);
-        console.log('UltimateShop Checker: Current checking flag:', isChecking);
-        console.log('UltimateShop Checker: Page content preview:', document.body.innerText.substring(0, 200));
         
-        // Clear the checking flag immediately
+        // Clear the checking flag
         isChecking = false;
-        console.log('UltimateShop Checker: Checking flag cleared, proceeding with navigation...');
         
-        // Navigate immediately without delay
-        console.log('UltimateShop Checker: Navigating to profile page immediately...');
+        // Simple navigation to profile - what was working before
+        console.log('UltimateShop Checker: Navigating to profile page...');
+        window.location.href = 'https://ultimateshop.vc/profile';
         
-        // Method 1: Force navigation with multiple approaches
-        try {
-            console.log('UltimateShop Checker: Method 1: Direct window.location.href...');
-            window.location.href = 'https://ultimateshop.vc/profile';
-            console.log('UltimateShop Checker: Navigation method 1 completed');
-        } catch (error) {
-            console.error('UltimateShop Checker: Method 1 failed:', error);
-        }
-        
-        // Method 2: Use window.location.replace as backup
-        setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Method 2: window.location.replace...');
-                try {
-                    window.location.replace('https://ultimateshop.vc/profile');
-                    console.log('UltimateShop Checker: Navigation method 2 completed');
-                } catch (error) {
-                    console.error('UltimateShop Checker: Method 2 failed:', error);
-                }
-            }
-        }, 500);
-        
-        // Method 3: Click profile link if available
-        setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Method 3: Clicking profile link...');
-                const profileLink = document.querySelector('a[href="/profile"]');
-                if (profileLink) {
-                    profileLink.click();
-                    console.log('UltimateShop Checker: Profile link clicked');
-                } else {
-                    console.log('UltimateShop Checker: Profile link not found');
-                }
-            }
-        }, 1000);
-        
-        // Method 4: Force reload with profile URL
-        setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Method 4: Force reload with profile URL...');
-                try {
-                    window.location.href = window.location.origin + '/profile';
-                    console.log('UltimateShop Checker: Navigation method 4 completed');
-                } catch (error) {
-                    console.error('UltimateShop Checker: Method 4 failed:', error);
-                }
-            }
-        }, 1500);
-        
-        // Method 5: Final fallback - refresh page
-        setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Method 5: Final fallback - refreshing page...');
-                window.location.reload();
-            }
-        }, 2000);
-        
-        // Check for navigation blocking after 3 seconds
-        setTimeout(() => {
-            if (isNavigationBlocked()) {
-                console.log('UltimateShop Checker: Navigation blocking detected, using aggressive methods...');
-                forceNavigationToProfile();
-            }
-        }, 3000);
-        
-        console.log('UltimateShop Checker: ===== SUCCESS PAGE HANDLER COMPLETED =====');
-        
-        // Start page state monitoring
-        monitorPageState();
+        console.log('UltimateShop Checker: Navigation initiated');
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
@@ -815,86 +730,4 @@ function monitorSuccessKey() {
 function addSuccessKeyMonitoring() {
     console.log('UltimateShop Checker: Starting success key monitoring...');
     monitorSuccessKey();
-}
-
-// Monitor page state changes
-function monitorPageState() {
-    console.log('UltimateShop Checker: Starting page state monitoring...');
-    
-    let monitorCount = 0;
-    const maxMonitors = 20; // Monitor for 20 seconds
-    
-    const monitorInterval = setInterval(() => {
-        monitorCount++;
-        const currentUrl = window.location.href;
-        const hasDiscount = document.body.innerText.includes('Discount :');
-        const hasProfile = currentUrl.includes('/profile');
-        
-        console.log(`UltimateShop Checker: Page state monitor (${monitorCount}/${maxMonitors}):`, {
-            url: currentUrl,
-            hasDiscount,
-            hasProfile,
-            checkingFlag: isChecking
-        });
-        
-        if (hasProfile) {
-            console.log('UltimateShop Checker: Profile page detected, stopping monitor');
-            clearInterval(monitorInterval);
-            return;
-        }
-        
-        if (monitorCount >= maxMonitors) {
-            console.log('UltimateShop Checker: Page state monitoring completed');
-            clearInterval(monitorInterval);
-            
-            // If still not on profile page, force refresh
-            if (!hasProfile) {
-                console.log('UltimateShop Checker: Still not on profile page, forcing refresh...');
-                window.location.reload();
-            }
-        }
-    }, 1000);
-}
-
-// Check if navigation is being blocked
-function isNavigationBlocked() {
-    const currentUrl = window.location.href;
-    const isOnNewsPage = currentUrl.includes('/news');
-    const isOnProfilePage = currentUrl.includes('/profile');
-    
-    // If we're stuck on news page, navigation might be blocked
-    if (isOnNewsPage && !isOnProfilePage) {
-        console.log('UltimateShop Checker: WARNING: Navigation appears to be blocked - stuck on news page');
-        return true;
-    }
-    
-    return false;
-}
-
-// Force navigation with aggressive methods
-function forceNavigationToProfile() {
-    console.log('UltimateShop Checker: Using aggressive navigation methods...');
-    
-    // Method 1: History API manipulation
-    try {
-        window.history.pushState({}, '', '/profile');
-        console.log('UltimateShop Checker: History API navigation attempted');
-    } catch (error) {
-        console.error('UltimateShop Checker: History API failed:', error);
-    }
-    
-    // Method 2: Create and trigger navigation event
-    try {
-        const navigationEvent = new PopStateEvent('popstate', { state: {} });
-        window.dispatchEvent(navigationEvent);
-        console.log('UltimateShop Checker: Navigation event triggered');
-    } catch (error) {
-        console.error('UltimateShop Checker: Navigation event failed:', error);
-    }
-    
-    // Method 3: Force page reload with profile URL
-    setTimeout(() => {
-        console.log('UltimateShop Checker: Force reloading with profile URL...');
-        window.location.href = 'https://ultimateshop.vc/profile';
-    }, 500);
 }
