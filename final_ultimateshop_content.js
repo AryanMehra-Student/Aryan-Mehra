@@ -51,17 +51,30 @@ function extractProfileData() {
             cardsPurchased = cardsRow.nextElementSibling.textContent.trim();
         }
 
+        // Combo Check Logic
+        let comboCheck = 'INVALID';
+        if (balance !== '0.00' && balance !== '0.00 $') {
+            comboCheck = 'VALID';
+        }
+
+        // Total Captures (Cards Purchased)
+        let totalCaptures = cardsPurchased;
+
         return {
             balance: balance,
             totalSpent: totalSpent,
-            cardsPurchased: cardsPurchased
+            cardsPurchased: cardsPurchased,
+            comboCheck: comboCheck,
+            totalCaptures: totalCaptures
         };
     } catch (error) {
         console.error('Error extracting profile data:', error);
         return {
             balance: '0.00',
             totalSpent: '0',
-            cardsPurchased: '0'
+            cardsPurchased: '0',
+            comboCheck: 'INVALID',
+            totalCaptures: '0'
         };
     }
 }
@@ -243,7 +256,9 @@ function handlePage() {
                 password,
                 balance: profileData.balance,
                 totalSpent: profileData.totalSpent,
-                cardsPurchased: profileData.cardsPurchased
+                cardsPurchased: profileData.cardsPurchased,
+                comboCheck: profileData.comboCheck,
+                totalCaptures: profileData.totalCaptures
             });
             sessionStorage.removeItem('current_username');
             sessionStorage.removeItem('current_password');
