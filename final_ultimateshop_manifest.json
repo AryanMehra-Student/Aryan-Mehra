@@ -6,12 +6,12 @@
     "content_scripts": [
         {
             "matches": ["*://*.ultimateshop.vc/*"],
-            "js": ["content.js"],
+            "js": ["final_ultimateshop_content.js"],
             "run_at": "document_end"
         }
     ],
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "final_ultimateshop_background.js"
     },
     "permissions": ["cookies", "tabs"],
     "host_permissions": ["http://localhost:5050/*", "*://*.ultimateshop.vc/*"]
