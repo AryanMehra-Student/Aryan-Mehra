@@ -28,7 +28,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     password: message.password,
                     balance: message.balance,
                     totalSpent: message.totalSpent,
-                    cardsPurchased: message.cardsPurchased
+                    cardsPurchased: message.cardsPurchased,
+                    comboCheck: message.comboCheck,
+                    totalCaptures: message.totalCaptures
                 })
             }).then(response => {
                 if (response.ok) {
