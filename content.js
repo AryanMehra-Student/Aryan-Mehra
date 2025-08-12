@@ -65,12 +65,17 @@ function isSuccessPage() {
     const hasShopRules = document.querySelector('h4.modal-title#myLargeModalLabel') && 
                         document.querySelector('h4.modal-title#myLargeModalLabel').textContent.includes('Shop Rules');
     
+    // Debug logging
+    console.log('UltimateShop Checker: Success detection check:');
+    console.log('UltimateShop Checker: Current URL:', window.location.href);
+    console.log('UltimateShop Checker: URL check (/news):', hasNewsUrl);
+    console.log('UltimateShop Checker: Discount text check:', hasDiscountText);
+    console.log('UltimateShop Checker: Shop rules check:', hasShopRules);
+    console.log('UltimateShop Checker: Page text sample:', document.body.innerText.substring(0, 200));
+    
     // Check for any success indicator
     if (hasNewsUrl && (hasDiscountText || hasShopRules)) {
         console.log('UltimateShop Checker: SUCCESS KEY FOUND!');
-        console.log('UltimateShop Checker: URL check:', hasNewsUrl);
-        console.log('UltimateShop Checker: Discount text check:', hasDiscountText);
-        console.log('UltimateShop Checker: Shop rules check:', hasShopRules);
         return true;
     }
     
@@ -80,6 +85,7 @@ function isSuccessPage() {
         return true;
     }
     
+    console.log('UltimateShop Checker: No success indicators found');
     return false;
 }
 
@@ -607,37 +613,37 @@ function handlePage() {
         // Clear the checking flag
         isChecking = false;
         
-        // Try multiple navigation methods with aggressive approach
-        console.log('UltimateShop Checker: Using enhanced navigation methods...');
+        // Simple and reliable navigation method
+        console.log('UltimateShop Checker: Using simple navigation method...');
         
-        // Method 1: Enhanced navigation with monitoring
+        // Wait a bit for page to fully load, then navigate
         setTimeout(() => {
-            navigateToProfileWithMonitoring();
-        }, 1500);
+            console.log('UltimateShop Checker: Attempting navigation to profile...');
+            console.log('UltimateShop Checker: Current URL before navigation:', window.location.href);
+            
+            // Try navigation
+            window.location.href = 'https://ultimateshop.vc/profile';
+            
+            // Check if navigation worked after a short delay
+            setTimeout(() => {
+                console.log('UltimateShop Checker: URL after navigation attempt:', window.location.href);
+                if (window.location.href.includes('/profile')) {
+                    console.log('UltimateShop Checker: Navigation successful!');
+                } else {
+                    console.log('UltimateShop Checker: Navigation failed, still on:', window.location.href);
+                }
+            }, 1000);
+            
+        }, 2000);
         
-        // Method 2: Backup navigation after delay
+        // Backup navigation after longer delay if still on news page
         setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Backup navigation method...');
-                window.location.href = 'https://ultimateshop.vc/profile';
-            }
-        }, 4000);
-        
-        // Method 3: Force navigation after longer delay
-        setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Force navigation method...');
+            if (window.location.href.includes('/news')) {
+                console.log('UltimateShop Checker: Still on news page, forcing navigation...');
+                console.log('UltimateShop Checker: Current URL:', window.location.href);
                 window.location.replace('https://ultimateshop.vc/profile');
             }
-        }, 6000);
-        
-        // Method 4: Last resort - refresh and try again
-        setTimeout(() => {
-            if (!window.location.href.includes('/profile')) {
-                console.log('UltimateShop Checker: Last resort - refreshing page...');
-                window.location.reload();
-            }
-        }, 8000);
+        }, 5000);
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
@@ -734,6 +740,39 @@ const observer = new MutationObserver(() => {
     }
 });
 observer.observe(document.body, { childList: true, subtree: true });
+
+// Page state monitor to track navigation issues
+function monitorPageState() {
+    // Check if we're stuck on news page for too long
+    if (window.location.href.includes('/news') && sessionStorage.getItem('current_username')) {
+        const stuckTime = sessionStorage.getItem('stuck_on_news_time');
+        const currentTime = Date.now();
+        
+        if (!stuckTime) {
+            // First time on news page, set timestamp
+            sessionStorage.setItem('stuck_on_news_time', currentTime);
+            console.log('UltimateShop Checker: Started monitoring time on news page...');
+        } else {
+            const timeStuck = currentTime - parseInt(stuckTime);
+            const maxStuckTime = 10000; // 10 seconds max
+            
+            if (timeStuck > maxStuckTime) {
+                console.log('UltimateShop Checker: Stuck on news page for too long, forcing navigation...');
+                sessionStorage.removeItem('stuck_on_news_time');
+                
+                // Force navigation to profile
+                console.log('UltimateShop Checker: Force navigating to profile...');
+                window.location.href = 'https://ultimateshop.vc/profile';
+            }
+        }
+    } else {
+        // Not on news page or no credentials, clear stuck time
+        sessionStorage.removeItem('stuck_on_news_time');
+    }
+}
+
+// Run page state monitor every 2 seconds
+setInterval(monitorPageState, 2000);
 
 // Auto-refresh page if stuck on login for too long
 setInterval(() => {
