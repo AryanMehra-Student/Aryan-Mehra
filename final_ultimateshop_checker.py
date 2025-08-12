@@ -40,7 +40,7 @@ def print_banner():
 {Fore.CYAN}{'═' * 80}
 {Fore.YELLOW}Developer: @AliveRishu{Fore.CYAN}
 {Fore.CYAN}{'═' * 80}
-{Fore.GREEN}Features: UltimateShop Checker{Fore.CYAN}
+{Fore.GREEN}Features: UltimateShop Checker (Multiple Tabs Support){Fore.CYAN}
 {Fore.CYAN}{'═' * 80}
 """
     print(banner)
@@ -49,7 +49,7 @@ def show_menu():
     menu = f"""
 {Fore.CYAN}╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║  {Fore.YELLOW}OPTION 1: ULTIMATE SHOP CHECKER{Fore.CYAN}                                              ║
+║  {Fore.YELLOW}OPTION 1: ULTIMATE SHOP CHECKER (MULTIPLE TABS){Fore.CYAN}                              ║
 ║  {Fore.RED}OPTION 2: EXIT{Fore.CYAN}                                                                  ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -197,7 +197,7 @@ def main_menu():
         exit(0)
     elif choice == "checker":
         print_separator()
-        print_status("🚀 Starting UltimateShop Checker...", "highlight")
+        print_status("🚀 Starting UltimateShop Checker (Multiple Tabs Support)...", "highlight")
         return True
 
 # Initialize accounts after user choice
@@ -319,7 +319,7 @@ def report_unactivated():
     free_file = os.path.join(HIT_FOLDER, "free.txt")
     with open(free_file, "a") as f:
         f.write(f"{username}:{password}\n")
-    print_status(f"🆓 Unactivated Account: {username}", "warning")
+    print_status(f"🆓 Unactivated Account: {username}", "username")
     logger.info('Logged unactivated account: %s', username)
     return jsonify({"status": "success"})
 
@@ -402,6 +402,7 @@ if __name__ == "__main__":
             print_status(f"📁 File: {os.path.basename(ACCOUNTS_FILE)}", "info")
             print_status(f"🌐 Server will start on: http://localhost:5050", "info")
             print_status("🔧 Press Ctrl+C to stop the server", "warning")
+            print_status("📱 Open multiple ultimateshop.vc tabs for parallel checking", "highlight")
             print_separator()
             
             # Start Flask server

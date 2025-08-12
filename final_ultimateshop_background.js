@@ -1,4 +1,4 @@
-// UltimateShop Checker - Background Service Worker
+// UltimateShop Checker - Background Service Worker (Multiple Tabs Support)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === '2fa_detected' || message.type === 'unactivated_detected' || message.type === 'hit_detected' || message.type === 'fail_detected') {
         const { username, password } = message;
@@ -36,22 +36,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.error(`Error reporting ${message.type}:`, error);
         });
 
-        // Clear cookies for ultimateshop.vc
+        // Clear cookies for ultimateshop.vc (Multiple Tabs Support)
         chrome.cookies.getAll({ domain: 'ultimateshop.vc' }, (cookies) => {
             cookies.forEach(cookie => {
                 const url = `https://${cookie.domain}${cookie.path}`;
                 chrome.cookies.remove({ url, name: cookie.name });
             });
             console.log('Cleared cookies for ultimateshop.vc');
-
-            // Open new tab with ultimateshop.vc
-            chrome.tabs.create({ url: 'https://ultimateshop.vc/' }, (tab) => {
-                console.log('Opened new tab:', tab.id);
-                // Close the old tab
-                chrome.tabs.remove(sender.tab.id, () => {
-                    console.log('Closed old tab:', sender.tab.id);
-                });
-            });
+            
+            // DON'T create new tab - let user control tabs
+            // User can manually open new tabs as needed
+            // Each tab will work independently with different accounts
         });
     }
 });

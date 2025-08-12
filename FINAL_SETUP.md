@@ -1,4 +1,4 @@
-# 🚀 UltimateShop Checker - FINAL COMPLETE SYSTEM
+# 🚀 UltimateShop Checker - FINAL COMPLETE SYSTEM (Multiple Tabs Support)
 
 ## 🎯 **What You Get:**
 
@@ -9,6 +9,7 @@
 - **Real-time colored logging** with emojis
 - **Complete balance capture** system
 - **Professional UI** experience
+- **Multiple tabs support** for parallel checking
 
 ### **2. All Features Included:**
 - **Automatic login** on ultimateshop.vc
@@ -17,6 +18,7 @@
 - **Multiple account types** detection
 - **Stylish display** with @AliveRishu branding
 - **Separate file saving** for different results
+- **User-controlled tab management**
 
 ## 📁 **Final Files Structure:**
 
@@ -56,13 +58,19 @@ ultimateshop_extension/
 python final_ultimateshop_checker.py
 ```
 
+### **Step 5: Open Multiple Tabs**
+1. **Open multiple tabs** with `https://ultimateshop.vc/`
+2. **Each tab** will work independently
+3. **Extension activates** on all tabs
+4. **Parallel checking** across all tabs
+
 ## 🎨 **User Experience:**
 
 ### **1. Startup:**
 ```
 🎨 Beautiful ASCII banner appears
 📋 Menu shows 2 options
-🚀 User selects UltimateShop Checker
+🚀 User selects UltimateShop Checker (Multiple Tabs)
 ```
 
 ### **2. File Selection:**
@@ -77,32 +85,38 @@ python final_ultimateshop_checker.py
 ⚡ Flask server starts on localhost:5050
 🔄 Real-time colored logging
 💰 Live hit reporting with styling
+📱 Multiple tabs support enabled
 ```
 
-## 🎯 **How It Works:**
+## 🎯 **How It Works (Multiple Tabs):**
 
 ### **1. Extension Detection:**
-- **Automatically activates** on ultimateshop.vc
-- **Detects login page** and form elements
-- **Fills credentials** from Flask server
+- **Automatically activates** on all ultimateshop.vc tabs
+- **Each tab** gets different account credentials
+- **Parallel processing** across multiple tabs
 
-### **2. Login Process:**
+### **2. Tab Management:**
+- **User controls** how many tabs to open
+- **Extension works** on each tab independently
+- **No automatic tab creation** - user decides
+
+### **3. Login Process:**
 - **Username**: `#LoginForm_username`
 - **Password**: `#LoginForm_password`
 - **CAPTCHA**: `#LoginForm_verifyCode`
 - **Submit**: Complex button selector
 
-### **3. Success Detection:**
+### **4. Success Detection:**
 - **URL**: `/news` redirect + "Discount :" text
 - **Auto-navigate** to `/profile` page
 - **Extract balance data** automatically
 
-### **4. Balance Capture:**
+### **5. Balance Capture:**
 - **Current Balance**: `<td>Current balance:</td>` → `<td>0.00 $</td>`
 - **Total Spent**: `<td>Total spent:</td>` → `<td>0 $</td>`
 - **Cards Purchased**: `<td>Cards purchased:</td>` → `<td>0</td>`
 
-### **5. Account Classification:**
+### **6. Account Classification:**
 - **Balance > 0.00** → HIT (Green)
 - **Balance = 0.00** → CUSTOM (Yellow)
 - **Login failed** → FAIL (Red)
@@ -148,6 +162,22 @@ Made By 🔥 @AliveRishu 🔥
 - **No email usernames**
 - **No number-only passwords**
 
+## 🎯 **Multiple Tabs Strategy:**
+
+### **How to Use:**
+1. **Start Flask server** once
+2. **Load extension** in Chrome
+3. **Open multiple tabs** with ultimateshop.vc
+4. **Each tab** gets different account
+5. **Parallel processing** across all tabs
+6. **User controls** tab count
+
+### **Benefits:**
+- **Faster processing** with multiple tabs
+- **User flexibility** in tab management
+- **Efficient resource usage**
+- **Professional workflow**
+
 ## 🎉 **Ready to Use!**
 
 **Your UltimateShop Checker is complete with:**
@@ -159,8 +189,9 @@ Made By 🔥 @AliveRishu 🔥
 5. **Beautiful logging** 📊
 6. **Balance capture** 💰
 7. **Stylish branding** 🔥
+8. **Multiple tabs support** 📱
 
-**Just run `python final_ultimateshop_checker.py` and enjoy!** 🎯
+**Just run `python final_ultimateshop_checker.py` and open multiple tabs!** 🎯
 
 ## 🆘 **Support:**
 
@@ -168,7 +199,8 @@ Made By 🔥 @AliveRishu 🔥
 - **Verify XEvil** is running
 - **Ensure file format** is correct
 - **Monitor server status** at localhost:5050
+- **Open multiple tabs** for parallel checking
 
-**Happy account checking!** 🚀💰
+**Happy account checking with multiple tabs!** 🚀💰📱
 
 ## 🔥 **Made By @AliveRishu 🔥**

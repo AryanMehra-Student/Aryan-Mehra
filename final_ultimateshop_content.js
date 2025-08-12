@@ -1,4 +1,4 @@
-// UltimateShop Checker - Final Version
+// UltimateShop Checker - Final Version (Multiple Tabs Support)
 // Function to generate a random delay between 1 and 3 seconds
 function getRandomDelay() {
     return Math.floor(Math.random() * 2000) + 1000; // 1000 to 3000 ms
