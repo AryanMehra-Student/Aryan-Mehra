@@ -159,15 +159,26 @@
       return "WRONG_CREDENTIALS";
     }
     
+    // Check for unknown responses
+    if (pageText.includes("Unknown") || pageText.includes("Error") || pageText.includes("Something went wrong")) {
+      return "UNKNOWN_RESPONSE";
+    }
+    
     return null;
   }
 
+  // IMPROVEMENT: Multi-tabs coordination
+  function getTabId() {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  const tabId = getTabId();
   const isLogin = location.pathname === "/login";
   const isNews = location.pathname === "/news";
   const isProfile = location.pathname === "/profile";
 
   if (isLogin) {
-    debug("🔑 Login page detected");
+    debug(`🔑 Login page detected [Tab: ${tabId}]`);
 
     // Check for errors first
     const error = checkForErrors();
@@ -183,16 +194,35 @@
           location.reload();
           return;
         } else if (error === "CAPTCHA_WRONG") {
-          // IMPROVEMENT: Retry with same account for CAPTCHA wrong
+          // IMPROVEMENT: Retry with NEW CAPTCHA (not same one)
           let captchaRetryCount = parseInt(sessionStorage.getItem("captchaRetryCount") || "0");
           const maxCaptchaRetries = 5;
           
           if (captchaRetryCount < maxCaptchaRetries) {
             captchaRetryCount++;
             sessionStorage.setItem("captchaRetryCount", captchaRetryCount.toString());
-            debug(`🔄 CAPTCHA wrong, retrying with same account (${captchaRetryCount}/${maxCaptchaRetries})...`);
+            debug(`🔄 CAPTCHA wrong, retrying with NEW CAPTCHA (${captchaRetryCount}/${maxCaptchaRetries})...`);
+            
+            // Clear form to get fresh CAPTCHA
+            const usernameField = document.querySelector("input[name='LoginForm[username]']");
+            const passwordField = document.querySelector("input[name='LoginForm[password]']");
+            const captchaField = document.querySelector("input[name='LoginForm[verifyCode]']");
+            
+            if (usernameField) usernameField.value = creds.username;
+            if (passwordField) passwordField.value = creds.password;
+            if (captchaField) captchaField.value = '';
+            
+            // Force refresh CAPTCHA image
+            const captchaImg = document.querySelector("img[src*='captcha']");
+            if (captchaImg) {
+              const currentSrc = captchaImg.src;
+              const separator = currentSrc.includes('?') ? '&' : '?';
+              captchaImg.src = currentSrc + separator + 't=' + Date.now();
+              debug("🔄 Forced CAPTCHA refresh for new image");
+            }
+            
             await sleep(2000);
-            location.reload();
+            // Don't reload, just wait for new CAPTCHA and retry
             return;
           } else {
             debug("❌ Max CAPTCHA retries reached, reporting fail");
@@ -206,6 +236,14 @@
         } else if (error === "WRONG_CREDENTIALS") {
           debug("❌ Wrong credentials, reporting fail");
           await reportFail(creds, "Incorrect username or password");
+          sessionStorage.removeItem("lastCreds");
+          sessionStorage.removeItem("captchaRetryCount");
+          await sleep(2000);
+          location.reload();
+          return;
+        } else if (error === "UNKNOWN_RESPONSE") {
+          debug("❓ Unknown response detected, skipping account");
+          await reportFail(creds, "Unknown response from server");
           sessionStorage.removeItem("lastCreds");
           sessionStorage.removeItem("captchaRetryCount");
           await sleep(2000);
@@ -285,7 +323,7 @@
   }
 
   if (isNews) {
-    debug("📄 News page detected - redirecting to profile...");
+    debug(`📄 News page detected - redirecting to profile [Tab: ${tabId}]`);
     await sleep(1500);
     
     // IMPROVEMENT 2: Redirect to profile instead of capturing from news
@@ -294,7 +332,7 @@
   }
 
   if (isProfile) {
-    debug("👤 Profile page detected - capturing data...");
+    debug(`👤 Profile page detected - capturing data [Tab: ${tabId}]`);
     await sleep(2000);
 
     const creds = JSON.parse(sessionStorage.getItem("lastCreds") || "{}");
