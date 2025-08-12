@@ -14,6 +14,9 @@ from tkinter import filedialog, messagebox
 # Initialize colorama for cross-platform colored output
 colorama.init(autoreset=True)
 
+# XEvil Configuration - CHANGE THIS TO YOUR ACTUAL KEY!
+XEVIL_API_KEY = "YOUR_XEVIL_API_KEY_HERE"  # Replace with your actual XEvil API key
+
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -242,7 +245,7 @@ def solve_captcha():
                 'body': base64_image,
                 'type': 1,
                 'ext': 'jpg',
-                'key': 'error',
+                'key': XEVIL_API_KEY,
                 'soft_id': '1234'
             }
             start_time = time.time()
@@ -255,7 +258,7 @@ def solve_captcha():
                 logger.info('Received task ID: %s', task_id)
 
                 for _ in range(10):
-                    result_response = requests.get(XEVIL_RESULT_URL, params={'key': 'error', 'action': 'get', 'id': task_id}, timeout=5)
+                    result_response = requests.get(XEVIL_RESULT_URL, params={'key': XEVIL_API_KEY, 'action': 'get', 'id': task_id}, timeout=5)
                     result_response.raise_for_status()
                     result_text = result_response.text
                     logger.debug('XEvil result response: %s', result_text)
