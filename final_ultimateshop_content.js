@@ -767,9 +767,15 @@ function monitorSuccessKey() {
     
     const checkInterval = setInterval(() => {
         checkCount++;
+        
+        // Check for "Shop Rules" element - primary method
+        const shopRulesElement = document.querySelector('h4.modal-title#myLargeModalLabel');
+        const hasShopRules = shopRulesElement && shopRulesElement.textContent.includes('Shop Rules');
+        
+        // Fallback: also check for "Discount :" text
         const hasDiscount = document.body.innerText.includes('Discount :');
         
-        console.log(`UltimateShop Checker: Success key monitoring (${checkCount}/${maxChecks}): "Discount :" present = ${hasDiscount}`);
+        console.log(`UltimateShop Checker: Success key monitoring (${checkCount}/${maxChecks}): "Shop Rules" present = ${hasShopRules}, "Discount :" present = ${hasDiscount}`);
         
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);
