@@ -107,32 +107,62 @@ function getErrorMessage() {
 
 // Check if confirm button is present
 function isConfirmButtonPresent() {
-    const confirmButtons = document.querySelectorAll('button, input[type="submit"], .btn');
+    const confirmButtons = document.querySelectorAll('button, input[type="submit"], .btn, a');
     for (let button of confirmButtons) {
-        if (button.textContent.toLowerCase().includes('confirm') || 
-            button.textContent.toLowerCase().includes('continue') ||
-            button.textContent.toLowerCase().includes('proceed')) {
+        const buttonText = button.textContent.toLowerCase();
+        if (buttonText.includes('confirm') || 
+            buttonText.includes('continue') ||
+            buttonText.includes('proceed') ||
+            buttonText.includes('ok') ||
+            buttonText.includes('yes') ||
+            buttonText.includes('accept')) {
             return button;
         }
     }
     return null;
 }
 
-// Handle confirm button click
+// Handle confirm button click with better logic
 function handleConfirmButton() {
     const confirmButton = isConfirmButtonPresent();
     if (confirmButton) {
         console.log('UltimateShop Checker: Found confirm button, clicking...');
+        
+        // Click the confirm button
         confirmButton.click();
         
         // Wait for page to load after confirm
         setTimeout(() => {
             console.log('UltimateShop Checker: After confirm button, checking page...');
-            handlePage();
+            
+            // Check if we're back to login page
+            if (isLoginPage()) {
+                console.log('UltimateShop Checker: Back to login page, starting automation...');
+                // Start fresh login automation
+                setTimeout(performLoginAutomation, 2000);
+            } else {
+                // If not login page, refresh to get there
+                console.log('UltimateShop Checker: Not on login page, refreshing...');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
         }, 3000);
         return true;
     }
     return false;
+}
+
+// Check for confirm buttons on page load
+function checkForConfirmButtons() {
+    // Wait a bit for page to fully load
+    setTimeout(() => {
+        if (handleConfirmButton()) {
+            console.log('UltimateShop Checker: Confirm button handled on page load');
+        } else {
+            console.log('UltimateShop Checker: No confirm button found, proceeding normally');
+        }
+    }, 2000);
 }
 
 // Retry login with new CAPTCHA using same credentials
@@ -361,6 +391,10 @@ function handlePage() {
                 setTimeout(performLoginAutomation, 1000);
             }
         } else {
+            // Check for confirm buttons before starting automation
+            if (handleConfirmButton()) {
+                return;
+            }
             performLoginAutomation();
         }
     } else if (isSuccessPage()) {
@@ -417,14 +451,21 @@ function autoStartChecking() {
 
 // Run when the page loads
 window.addEventListener('load', () => {
-    console.log('UltimateShop Checker: Page loaded, auto-starting...');
-    autoStartChecking();
+    console.log('UltimateShop Checker: Page loaded, checking for confirm buttons first...');
+    
+    // First check for confirm buttons that might appear after refresh
+    checkForConfirmButtons();
+    
+    // Then proceed with normal flow
+    setTimeout(() => {
+        autoStartChecking();
+    }, 3000);
 });
 
 // Also run when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('UltimateShop Checker: DOM ready, checking page...');
-    autoStartChecking();
+    console.log('UltimateShop Checker: DOM ready, checking for confirm buttons...');
+    checkForConfirmButtons();
 });
 
 // Observe DOM changes for dynamic content
