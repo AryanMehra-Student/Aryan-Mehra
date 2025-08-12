@@ -247,6 +247,12 @@ function handlePage() {
             });
             sessionStorage.removeItem('current_username');
             sessionStorage.removeItem('current_password');
+            
+            // Auto-refresh tab for next account after 3 seconds
+            setTimeout(() => {
+                console.log('UltimateShop Checker: Refreshing tab for next account...');
+                window.location.reload();
+            }, 3000);
         }
     }
 }

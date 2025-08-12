@@ -44,9 +44,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             console.log('Cleared cookies for ultimateshop.vc');
             
-            // DON'T create new tab - let user control tabs
-            // User can manually open new tabs as needed
-            // Each tab will work independently with different accounts
+            // Auto-refresh current tab for new account
+            setTimeout(() => {
+                chrome.tabs.reload(sender.tab.id, () => {
+                    console.log('Tab refreshed for new account:', sender.tab.id);
+                });
+            }, 2000); // Wait 2 seconds before refresh
         });
     }
 });
