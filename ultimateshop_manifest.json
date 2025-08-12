@@ -1,0 +1,18 @@
+{
+    "manifest_version": 3,
+    "name": "UltimateShop Auto-Login",
+    "version": "1.0",
+    "description": "Automates navigation and login on ultimateshop.vc with human-like behavior",
+    "content_scripts": [
+        {
+            "matches": ["*://*.ultimateshop.vc/*"],
+            "js": ["content.js"],
+            "run_at": "document_end"
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "permissions": ["cookies", "tabs"],
+    "host_permissions": ["http://localhost:5050/*", "*://*.ultimateshop.vc/*"]
+}
