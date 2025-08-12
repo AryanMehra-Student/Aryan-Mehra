@@ -255,9 +255,48 @@ function handlePage() {
     
     if (isLoginPage()) {
         console.log('UltimateShop Checker: Handling login page...');
+        
+        // First check for confirm button
+        if (handleConfirmButton()) {
+            return; // Wait for confirm button to process
+        }
+        
         const error = getErrorMessage();
         if (error) {
-            if (error === 'The verification code is incorrect') {
+            if (error === 'BANNED') {
+                console.log('UltimateShop Checker: Account BANNED, skipping...');
+                
+                // Report as BANNED
+                const username = sessionStorage.getItem('current_username');
+                const password = sessionStorage.getItem('current_password');
+                if (username && password) {
+                    chrome.runtime.sendMessage({
+                        type: 'banned_detected',
+                        username,
+                        password
+                    });
+                    sessionStorage.removeItem('current_username');
+                    sessionStorage.removeItem('current_password');
+                }
+                
+                // Try next account
+                setTimeout(performLoginAutomation, 1000);
+                
+            } else if (error === 'SITE_ISSUE') {
+                console.log('UltimateShop Checker: Site issue detected, trying to resolve...');
+                
+                // Try to handle site issue
+                if (handleConfirmButton()) {
+                    return;
+                } else {
+                    // If can't resolve, refresh and retry
+                    setTimeout(() => {
+                        console.log('UltimateShop Checker: Refreshing tab to resolve site issue...');
+                        window.location.reload();
+                    }, 2000);
+                }
+                
+            } else if (error === 'The verification code is incorrect') {
                 console.log('UltimateShop Checker: CAPTCHA incorrect, attempt:', captchaRetryCount + 1);
                 
                 // Check if we've exceeded max retries
