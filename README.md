@@ -1,165 +1,174 @@
-# VClub Auto-Login System
+# 🚀 UltimateShop Checker - Complete Account Checking System
 
-This is a complete account checking system for vclub.one that includes a Chrome extension and a Flask server for automated login and account validation.
+## 🎯 **Overview:**
+A comprehensive Chrome extension and Flask server system for automated account checking on `ultimateshop.vc`. Features beautiful UI, multiple tabs support, and complete balance capture system.
 
-## System Components
+## 🏗️ **System Architecture:**
 
-### 1. Chrome Extension (`extension/` folder)
-- **manifest.json**: Extension configuration
-- **background.js**: Background service worker for handling messages and tab management
-- **content.js**: Content script that runs on vclub.one pages
+### **1. Chrome Extension:**
+- **`final_ultimateshop_manifest.json`** - Extension configuration
+- **`final_ultimateshop_content.js`** - Main automation logic
+- **`final_ultimateshop_background.js`** - Background service worker
 
-### 2. Flask Server (`vclub_server.py`)
-- Manages account lists
-- Handles CAPTCHA solving via XEvil
-- Reports different account types (2FA, unactivated, hits)
-- Saves results to organized files
+### **2. Flask Server (`final_ultimateshop_checker.py`):**
+- **Manages account lists** with Tkinter file dialog
+- **Handles CAPTCHA solving** via XEvil integration
+- **Reports different account types** (HIT, CUSTOM, FAIL, 2FA, unactivated)
+- **Saves results** to organized files with professional display
+- **Beautiful UI** with ASCII banner and colored logging
 
-## Setup Instructions
+## 🚀 **Key Features:**
 
-### Prerequisites
-1. **Python 3.7+** installed
-2. **Chrome/Chromium browser**
-3. **XEvil CAPTCHA solver** running on `http://127.0.0.1:80`
-4. **Account list file** in format: `username:password` (one per line)
+### **✅ Complete Automation:**
+- **Automatic login** on ultimateshop.vc
+- **CAPTCHA solving** via XEvil
+- **Balance extraction** from profile page
+- **Multiple tabs support** for parallel processing
 
-### Step 1: Install Python Dependencies
+### **🎨 Professional UI:**
+- **Mixed-color ASCII banner**
+- **Tkinter file selection dialog**
+- **Interactive menu system**
+- **Real-time colored logging** with emojis
+- **@AliveRishu branding**
+
+### **💰 Smart Classification:**
+- **HIT** (Green) - Balance > 0.00
+- **CUSTOM** (Yellow) - Balance = 0.00 (Free hits)
+- **FAIL** (Red) - Login failed
+- **2FA** - Two-factor authentication
+- **Unactivated** - Inactive accounts
+
+### **📊 Data Capture:**
+- **Current Balance** from profile page
+- **Total Spent** tracking
+- **Cards Purchased** count
+- **Automatic profile navigation**
+
+## 🔧 **Setup Instructions:**
+
+### **Step 1: Install Dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 2: Prepare Account List
-Create a text file (e.g., `accounts.txt`) with your accounts in this format:
+### **Step 2: Create Extension Folder**
 ```
-username1:password1
-username2:password2
-username3:password3
+ultimateshop_extension/
+├── manifest.json        # Copy from final_ultimateshop_manifest.json
+├── content.js          # Copy from final_ultimateshop_content.js
+└── background.js       # Copy from final_ultimateshop_background.js
 ```
 
-**Important**: 
-- Don't use email addresses as usernames
-- Don't use number-only passwords
-- Use colon (`:`) as separator
-
-### Step 3: Start the Flask Server
-```bash
-python vclub_server.py
-```
-When prompted, enter your account list filename (e.g., `accounts.txt`)
-
-The server will start on `http://localhost:5050`
-
-### Step 4: Install Chrome Extension
-1. Open Chrome and go to `chrome://extensions/`
-2. Enable "Developer mode" (top right)
+### **Step 3: Install Chrome Extension**
+1. Go to `chrome://extensions/`
+2. Enable "Developer mode"
 3. Click "Load unpacked"
-4. Select the folder containing your extension files
-5. The extension should now appear in your extensions list
+4. Select `ultimateshop_extension` folder
 
-## How It Works
-
-### Account Checking Process
-1. **Extension detects** when you're on vclub.one
-2. **Automatically navigates** to login page
-3. **Fetches credentials** from the Flask server
-4. **Fills login form** with username/password
-5. **Solves CAPTCHA** using XEvil
-6. **Submits login** and waits for response
-7. **Analyzes result** and reports accordingly
-
-### Account Types Detected
-- **Valid Accounts**: Extracts balance, CCS stats, amounts, refunds
-- **2FA Accounts**: Requires two-factor authentication
-- **Unactivated Accounts**: Not yet activated
-- **Invalid Accounts**: Wrong credentials
-
-### Result Files
-Results are saved in the `hit/` folder:
-- `hit.txt`: Valid accounts with balance and stats
-- `2fa-hit.txt`: Accounts requiring 2FA
-- `free.txt`: Unactivated accounts
-
-## Features
-
-### Human-like Behavior
-- Random delays between actions (1-3 seconds)
-- Natural clicking patterns
-- Session management
-
-### Automatic Recovery
-- Retries with new CAPTCHA on failure
-- Handles different error types
-- Continues checking after failures
-
-### Smart Navigation
-- Detects current page type
-- Automatically navigates to login
-- Handles dynamic content changes
-
-## Configuration
-
-### XEvil Settings
-- **URL**: `http://127.0.0.1:80`
-- **Key**: `error` (change this to your actual XEvil key)
-- **Timeout**: 10 seconds for submission, 5 seconds for results
-
-### Server Settings
-- **Port**: 5050
-- **Host**: 0.0.0.0 (accessible from any IP)
-- **Debug**: Disabled for production
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Extension not working**
-   - Check if server is running on port 5050
-   - Verify extension permissions in Chrome
-   - Check console for error messages
-
-2. **CAPTCHA solving fails**
-   - Ensure XEvil is running on port 80
-   - Check XEvil key configuration
-   - Verify CAPTCHA image format
-
-3. **Accounts not loading**
-   - Check account file format
-   - Ensure file path is correct
-   - Verify file encoding (UTF-8)
-
-4. **Server connection errors**
-   - Check firewall settings
-   - Verify port 5050 is not blocked
-   - Ensure CORS is properly configured
-
-### Debug Mode
-Enable detailed logging by modifying the logging level in `vclub_server.py`:
-```python
-logging.basicConfig(level=logging.DEBUG, ...)
+### **Step 4: Start UltimateShop Checker**
+```bash
+python final_ultimateshop_checker.py
 ```
 
-## Security Notes
+### **Step 5: Open Multiple Tabs**
+1. **Open multiple tabs** with `https://ultimateshop.vc/`
+2. **Each tab** will work independently
+3. **Extension activates** on all tabs
+4. **Parallel checking** across all tabs
 
-- **Never share** your account lists
-- **Use VPN** if needed for privacy
-- **Monitor** server logs for suspicious activity
-- **Keep** XEvil key private
+## 📁 **File Organization:**
 
-## Performance Tips
+### **Result Files:**
+- **`hit.txt`** - Regular hits with balance
+- **`custom.txt`** - Free hits (balance 0.00)
+- **`fail.txt`** - Failed accounts
+- **`2fa-hit.txt`** - 2FA accounts
+- **`free.txt`** - Unactivated accounts
 
-- **Batch processing**: Process accounts in smaller batches
-- **Rate limiting**: Add delays between requests if needed
-- **Memory management**: Monitor server memory usage with large account lists
-- **Error handling**: Implement retry mechanisms for failed requests
+## 🎯 **How It Works:**
 
-## Support
+### **1. Extension Detection:**
+- **Automatically activates** on all ultimateshop.vc tabs
+- **Each tab** gets different account credentials
+- **Parallel processing** across multiple tabs
 
-For issues or questions:
-1. Check the console logs in Chrome DevTools
-2. Review server logs in the terminal
-3. Verify all components are properly configured
-4. Ensure dependencies are up to date
+### **2. Login Process:**
+- **Username**: `#LoginForm_username`
+- **Password**: `#LoginForm_password`
+- **CAPTCHA**: `#LoginForm_verifyCode`
+- **Submit**: Complex button selector
 
-## Legal Disclaimer
+### **3. Success Detection:**
+- **URL**: `/news` redirect + "Discount :" text
+- **Auto-navigate** to `/profile` page
+- **Extract balance data** automatically
 
-This tool is for educational and legitimate testing purposes only. Users are responsible for ensuring compliance with applicable laws and terms of service.
+### **4. Balance Capture:**
+- **Current Balance**: `<td>Current balance:</td>` → `<td>0.00 $</td>`
+- **Total Spent**: `<td>Total spent:</td>` → `<td>0 $</td>`
+- **Cards Purchased**: `<td>Cards purchased:</td>` → `<td>0</td>`
+
+### **5. Account Classification:**
+- **Balance > 0.00** → HIT (Green)
+- **Balance = 0.00** → CUSTOM (Yellow)
+- **Login failed** → FAIL (Red)
+
+## 🚀 **Display System:**
+
+### **✅ HIT (Green Color):**
+```
+[ HIT ] | username:password | Balance : $150.50 | Total Spent : $500 | Cards : 25
+Made By 🔥 @AliveRishu 🔥
+```
+
+### **🟡 CUSTOM/FREE (Yellow Color):**
+```
+[ CUSTOM ] | username:password | Balance : 0.00 | Total Spent : $0 | Cards : 0
+Made By 🔥 @AliveRishu 🔥
+```
+
+### **🔴 FAIL (Red Color):**
+```
+[ FAIL ] | username:password
+Made By 🔥 @AliveRishu 🔥
+```
+
+## ⚠️ **Requirements:**
+
+### **System:**
+- **Python 3.7+**
+- **Chrome/Chromium browser**
+- **XEvil CAPTCHA solver** (localhost:80)
+
+### **Files:**
+- **Accounts.txt** in username:password format
+- **No email usernames**
+- **No number-only passwords**
+
+## 🎉 **Ready to Use!**
+
+**Your UltimateShop Checker is complete with:**
+
+1. **Epic ASCII banner** 🎨
+2. **Tkinter file dialog** 📁
+3. **Professional UI** ✨
+4. **Complete automation** 🚀
+5. **Beautiful logging** 📊
+6. **Balance capture** 💰
+7. **Stylish branding** 🔥
+8. **Multiple tabs support** 📱
+
+**Just run `python final_ultimateshop_checker.py` and open multiple tabs!** 🎯
+
+## 🆘 **Support:**
+
+- **Check console logs** for errors
+- **Verify XEvil** is running
+- **Ensure file format** is correct
+- **Monitor server status** at localhost:5050
+- **Open multiple tabs** for parallel checking
+
+**Happy account checking with multiple tabs!** 🚀💰📱
+
+## 🔥 **Made By @AliveRishu 🔥**
