@@ -13,6 +13,8 @@ let captchaSolution = null;
 let isWaitingForCaptcha = false;
 let captchaRetryCount = 0;
 let MAX_CAPTCHA_RETRIES = 5; // Maximum 5 CAPTCHA retries per account
+let captchaRefreshAttempts = 0; // Track CAPTCHA refresh attempts
+let MAX_CAPTCHA_REFRESH_ATTEMPTS = 2; // Maximum 2 refresh attempts
 
 // Handle CAPTCHA failure with cookie clear and tab close
 function handleCaptchaFailure() {
@@ -23,10 +25,6 @@ function handleCaptchaFailure() {
         type: 'clear_cookies_and_close'
     });
 }
-
-// Track CAPTCHA refresh attempts
-let captchaRefreshAttempts = 0;
-const MAX_CAPTCHA_REFRESH_ATTEMPTS = 2;
 
 // Clear the login form completely
 function clearLoginForm() {
@@ -352,7 +350,10 @@ async function getCaptcha() {
         if (error.message.includes('CAPTCHA image not found')) {
             if (captchaRefreshAttempts >= MAX_CAPTCHA_REFRESH_ATTEMPTS) {
                 console.log('UltimateShop Checker: Max CAPTCHA refresh attempts reached, clearing cookies and closing tab...');
-                handleCaptchaFailure();
+                // Clear cookies and refresh instead of undefined function
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
             } else {
                 console.log('UltimateShop Checker: CAPTCHA not found, refreshing page...');
                 setTimeout(() => {
