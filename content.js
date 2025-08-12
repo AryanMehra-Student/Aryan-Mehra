@@ -221,8 +221,43 @@
               debug("🔄 Forced CAPTCHA refresh for new image");
             }
             
-            await sleep(2000);
-            // Don't reload, just wait for new CAPTCHA and retry
+            // Wait for new CAPTCHA to load and solve it
+            await sleep(3000);
+            
+            try {
+              // Wait for new CAPTCHA image
+              const newCaptchaImg = await waitFor("img[src*='captcha']", 10000);
+              if (newCaptchaImg && newCaptchaImg.complete && newCaptchaImg.naturalWidth > 0) {
+                debug("🔄 New CAPTCHA loaded, solving...");
+                
+                // Solve new CAPTCHA
+                const newSolution = await solveCaptchaWithRetry(newCaptchaImg);
+                if (newSolution) {
+                  // Fill and submit form with new CAPTCHA
+                  if (captchaField) captchaField.value = newSolution;
+                  await sleep(1000);
+                  
+                  debug("🔄 Submitting form with new CAPTCHA...");
+                  const form = document.querySelector("form");
+                  if (form) {
+                    form.submit();
+                  } else {
+                    debug("❌ Form not found, reloading...");
+                    location.reload();
+                  }
+                } else {
+                  debug("❌ Failed to solve new CAPTCHA, reloading...");
+                  location.reload();
+                }
+              } else {
+                debug("❌ New CAPTCHA not properly loaded, reloading...");
+                location.reload();
+              }
+            } catch (e) {
+              debug("❌ Error with new CAPTCHA, reloading...");
+              location.reload();
+            }
+            
             return;
           } else {
             debug("❌ Max CAPTCHA retries reached, reporting fail");
