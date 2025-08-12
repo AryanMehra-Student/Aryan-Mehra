@@ -61,10 +61,30 @@ function isLoginPage() {
 function isSuccessPage() {
     // Simple working method: check for /news URL + "Discount :" text
     const hasNewsUrl = window.location.href.includes('/news');
-    const hasDiscountText = document.body.innerText.includes('Discount :');
     
-    if (hasNewsUrl && hasDiscountText) {
-        console.log('UltimateShop Checker: SUCCESS KEY FOUND: /news + "Discount :" detected!');
+    // Debug: Log what text is actually on the page
+    console.log('UltimateShop Checker: Current page text sample:');
+    console.log('UltimateShop Checker: innerText (first 200 chars):', document.body.innerText.substring(0, 200));
+    console.log('UltimateShop Checker: textContent (first 200 chars):', document.body.textContent.substring(0, 200));
+    
+    // Try multiple text detection methods
+    const hasDiscountText1 = document.body.innerText.includes('Discount :');
+    const hasDiscountText2 = document.body.textContent.includes('Discount :');
+    const hasDiscountText3 = document.documentElement.innerText.includes('Discount :');
+    
+    // Also try searching for partial matches
+    const hasDiscountPartial1 = document.body.innerText.includes('Discount');
+    const hasDiscountPartial2 = document.body.textContent.includes('Discount');
+    
+    console.log('UltimateShop Checker: Success detection check:');
+    console.log('UltimateShop Checker: URL check:', hasNewsUrl);
+    console.log('UltimateShop Checker: innerText check:', hasDiscountText1);
+    console.log('UltimateShop Checker: textContent check:', hasDiscountText2);
+    console.log('UltimateShop Checker: documentElement check:', hasDiscountText3);
+    console.log('UltimateShop Checker: Partial Discount check:', hasDiscountPartial1 || hasDiscountPartial2);
+    
+    if (hasNewsUrl && (hasDiscountText1 || hasDiscountText2 || hasDiscountText3 || hasDiscountPartial1 || hasDiscountPartial2)) {
+        console.log('UltimateShop Checker: SUCCESS KEY FOUND: /news + "Discount" detected!');
         return true;
     }
     
@@ -529,9 +549,18 @@ function handlePage() {
         // Clear the checking flag
         isChecking = false;
         
-        // Simple navigation method from old working script
-        console.log('UltimateShop Checker: Using simple navigation method...');
-        setTimeout(navigateToProfile, 2000);
+        // Add small delay to ensure page content is fully loaded
+        console.log('UltimateShop Checker: Waiting for page content to load...');
+        setTimeout(() => {
+            // Double-check success detection after delay
+            if (isSuccessPage()) {
+                console.log('UltimateShop Checker: Success confirmed after delay, navigating to profile...');
+                setTimeout(navigateToProfile, 1000);
+            } else {
+                console.log('UltimateShop Checker: Success not confirmed after delay, refreshing...');
+                window.location.reload();
+            }
+        }, 2000);
         
     } else if (isProfilePage()) {
         console.log('UltimateShop Checker: On profile page, extracting data...');
