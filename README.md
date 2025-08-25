@@ -41,10 +41,10 @@ pip install flask flask-cors requests colorama
 
 ### 2. Configure XEvil API Key
 
-Edit `final_ultimateshop_checker.py` and replace:
-```python
-XEVIL_API_KEY = "YOUR_XEVIL_API_KEY_HERE"
-```
+You can configure XEvil via CLI or environment variable.
+
+- CLI: `--xevil-key YOUR_KEY`
+- Env: set `XEVIL_API_KEY=YOUR_KEY`
 
 ### 3. Load Chrome Extension
 
@@ -55,8 +55,21 @@ XEVIL_API_KEY = "YOUR_XEVIL_API_KEY_HERE"
 
 ### 4. Start the Server
 
+Basic (interactive menu + Tk file dialog):
 ```bash
 python final_ultimateshop_checker.py
+```
+
+Headless/CI-friendly (no Tk, specify accounts explicitly):
+```bash
+XEVIL_API_KEY=your_key python final_ultimateshop_checker.py \
+  --accounts /absolute/path/to/accounts.txt \
+  --host 0.0.0.0 --port 5050 --log-level INFO --no-ui
+```
+
+Show CLI options:
+```bash
+python final_ultimateshop_checker.py --help
 ```
 
 ### 5. Use the System

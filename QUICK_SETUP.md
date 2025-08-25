@@ -53,9 +53,14 @@ pip install -r requirements.txt
 ```
 
 ### **Step 2: Configure XEvil API Key**
-Edit `final_ultimateshop_checker.py` line 17:
-```python
-XEVIL_API_KEY = "YOUR_ACTUAL_XEVIL_KEY_HERE"
+Set via CLI or environment variable:
+```bash
+# Option A: CLI
+python final_ultimateshop_checker.py --xevil-key YOUR_ACTUAL_XEVIL_KEY_HERE --no-ui --accounts /path/to/accounts.txt
+
+# Option B: ENV
+export XEVIL_API_KEY=YOUR_ACTUAL_XEVIL_KEY_HERE
+python final_ultimateshop_checker.py --no-ui --accounts /path/to/accounts.txt
 ```
 
 ### **Step 3: Load Chrome Extension**
@@ -66,8 +71,14 @@ XEVIL_API_KEY = "YOUR_ACTUAL_XEVIL_KEY_HERE"
 5. Extension appears as "UltimateShop Checker"
 
 ### **Step 4: Start Server**
+Interactive mode (with menu and Tk file picker):
 ```bash
 python final_ultimateshop_checker.py
+```
+
+Headless mode (recommended on servers):
+```bash
+python final_ultimateshop_checker.py --accounts /absolute/path/accounts.txt --no-ui --xevil-key YOUR_KEY
 ```
 
 ### **Step 5: Use System**
