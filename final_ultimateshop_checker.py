@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import sys
+import argparse
 import requests
 import base64
 import logging
@@ -8,14 +10,23 @@ import time
 import re
 import colorama
 from colorama import Fore, Back, Style
-import tkinter as tk
-from tkinter import filedialog, messagebox
+
+# Optional Tkinter (headless-friendly)
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+    TK_AVAILABLE = True
+except Exception:
+    tk = None
+    filedialog = None
+    messagebox = None
+    TK_AVAILABLE = False
 
 # Initialize colorama for cross-platform colored output
 colorama.init(autoreset=True)
 
-# XEvil Configuration - CHANGE THIS TO YOUR ACTUAL KEY!
-XEVIL_API_KEY = "YOUR_XEVIL_API_KEY_HERE"  # Replace with your actual XEvil API key
+# XEvil Configuration - can be overridden by env or CLI
+XEVIL_API_KEY = os.environ.get("XEVIL_API_KEY", "YOUR_XEVIL_API_KEY_HERE")
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -87,6 +98,10 @@ def print_separator():
 # Tkinter File Dialog
 def select_file_dialog():
     print_status("📁 Opening file selection dialog...", "info")
+    
+    if not TK_AVAILABLE:
+        print_status("❌ Tkinter not available. Use --accounts or set ACCOUNTS_FILE.", "error")
+        return None
     
     # Hide main window
     root = tk.Tk()
@@ -222,8 +237,22 @@ def main_menu():
         return True
 
 # Initialize accounts after user choice
-ACCOUNTS_FILE = None
+ACCOUNTS_FILE = os.environ.get("ACCOUNTS_FILE")
 accounts = []
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="UltimateShop Checker Flask Server",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--accounts", type=str, default=os.environ.get("ACCOUNTS_FILE"), help="Path to accounts file (username:password per line)")
+    parser.add_argument("--xevil-key", type=str, default=os.environ.get("XEVIL_API_KEY"), help="XEvil API key")
+    parser.add_argument("--host", type=str, default=os.environ.get("HOST", "0.0.0.0"), help="Host to bind the Flask server")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 5050)), help="Port to run the Flask server")
+    parser.add_argument("--log-level", type=str, choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], default=os.environ.get("LOG_LEVEL", "DEBUG"), help="Logging level")
+    parser.add_argument("--no-ui", action="store_true", help="Run without interactive menu or Tk file dialog")
+    return parser.parse_args()
 
 @app.route("/get-creds", methods=["GET"])
 def get_creds():
@@ -443,24 +472,51 @@ def get_status():
 
 if __name__ == "__main__":
     try:
-        # Show main menu
-        if main_menu():
-            # Load accounts file using Tkinter dialog
+        args = parse_args()
+
+        # Configure logging level dynamically
+        logging.getLogger().setLevel(getattr(logging, args.log_level))
+        logger.setLevel(getattr(logging, args.log_level))
+
+        # Banner and optional menu
+        print_banner()
+
+        # XEvil key override
+        if args.xevil_key:
+            XEVIL_API_KEY = args.xevil_key
+
+        # Decide whether to show interactive menu
+        should_show_menu = not args.no_ui and sys.stdin.isatty()
+        if should_show_menu:
+            proceed = main_menu()
+            if not proceed:
+                sys.exit(0)
+        else:
+            print_status("🚀 Starting UltimateShop Checker (Headless mode)", "highlight")
+
+        # Determine accounts file
+        if args.accounts:
+            ACCOUNTS_FILE = args.accounts
+        elif not args.no_ui:
             ACCOUNTS_FILE = load_accounts_interactive()
-            accounts = load_accounts()
-            
-            # Print initial stats
-            print_separator()
-            print_status(f"📊 LOADED {len(accounts)} VALID ACCOUNTS", "success")
-            print_status(f"📁 File: {os.path.basename(ACCOUNTS_FILE)}", "info")
-            print_status(f"🌐 Server will start on: http://localhost:5050", "info")
-            print_status("🔧 Press Ctrl+C to stop the server", "warning")
-            print_status("📱 Open multiple ultimateshop.vc tabs for parallel checking", "highlight")
-            print_separator()
-            
-            # Start Flask server
-            app.run(host="0.0.0.0", port=5050, debug=False)
-            
+        else:
+            print_status("❌ Accounts file not provided. Use --accounts or set ACCOUNTS_FILE.", "error")
+            sys.exit(1)
+
+        accounts = load_accounts()
+
+        # Print initial stats
+        print_separator()
+        print_status(f"📊 LOADED {len(accounts)} VALID ACCOUNTS", "success")
+        print_status(f"📁 File: {os.path.basename(ACCOUNTS_FILE) if ACCOUNTS_FILE else 'N/A'}", "info")
+        print_status(f"🌐 Server will start on: http://{args.host}:{args.port}", "info")
+        print_status("🔧 Press Ctrl+C to stop the server", "warning")
+        print_status("📱 Open multiple ultimateshop.vc tabs for parallel checking", "highlight")
+        print_separator()
+
+        # Start Flask server
+        app.run(host=args.host, port=args.port, debug=False)
+
     except KeyboardInterrupt:
         print_separator()
         print_status("🛑 Server stopped by user", "error")
