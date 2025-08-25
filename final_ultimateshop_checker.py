@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import sys
+import argparse
 import requests
 import base64
 import logging
@@ -8,14 +10,25 @@ import time
 import re
 import colorama
 from colorama import Fore, Back, Style
-import tkinter as tk
-from tkinter import filedialog, messagebox
+from typing import Optional
+
+# Optional Tkinter import for GUI file selection (skipped in headless mode)
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+    TK_AVAILABLE = True
+except Exception:
+    tk = None
+    filedialog = None
+    messagebox = None
+    TK_AVAILABLE = False
 
 # Initialize colorama for cross-platform colored output
 colorama.init(autoreset=True)
 
 # XEvil Configuration - CHANGE THIS TO YOUR ACTUAL KEY!
-XEVIL_API_KEY = "YOUR_XEVIL_API_KEY_HERE"  # Replace with your actual XEvil API key
+# Read from env if provided, else keep placeholder. Can also be overridden via CLI.
+XEVIL_API_KEY = os.getenv("XEVIL_API_KEY", "YOUR_XEVIL_API_KEY_HERE")
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -29,6 +42,14 @@ if not os.path.exists(HIT_FOLDER):
 
 app = Flask(__name__)
 CORS(app)
+
+# App runtime configuration (can be overridden by CLI/env)
+app.config.setdefault("DUMMY_CAPTCHA", bool(int(os.getenv("DUMMY_CAPTCHA", "0"))))
+app.config.setdefault("HOST", os.getenv("HOST", "0.0.0.0"))
+app.config.setdefault("PORT", int(os.getenv("PORT", "5050")))
+
+# Default accounts file path (used only in headless if provided)
+DEFAULT_ACCOUNTS_FILE = os.path.join(script_dir, "accounts.txt")
 
 # ASCII Banner
 def print_banner():
@@ -86,12 +107,16 @@ def print_separator():
 
 # Tkinter File Dialog
 def select_file_dialog():
+    if not TK_AVAILABLE:
+        print_status("❌ GUI not available (Tkinter not installed or no display)", "error")
+        return None
+
     print_status("📁 Opening file selection dialog...", "info")
-    
+
     # Hide main window
     root = tk.Tk()
     root.withdraw()
-    
+
     try:
         # Show file dialog
         file_path = filedialog.askopenfilename(
@@ -102,19 +127,22 @@ def select_file_dialog():
             ],
             initialdir=os.getcwd()
         )
-        
+
         if file_path:
             print_status(f"✅ File selected: {os.path.basename(file_path)}", "success")
             return file_path
         else:
             print_status("❌ No file selected", "error")
             return None
-            
+
     except Exception as e:
         print_status(f"❌ Error in file dialog: {e}", "error")
         return None
     finally:
-        root.destroy()
+        try:
+            root.destroy()
+        except Exception:
+            pass
 
 # Load accounts file
 def load_accounts_interactive():
@@ -225,6 +253,39 @@ def main_menu():
 ACCOUNTS_FILE = None
 accounts = []
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="UltimateShop Checker Server")
+    parser.add_argument("--host", default=app.config["HOST"], help="Server host (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=app.config["PORT"], help="Server port (default: 5050)")
+    parser.add_argument("--accounts-file", dest="accounts_file", default=os.getenv("ACCOUNTS_FILE", None), help="Path to accounts file (username:password per line)")
+    parser.add_argument("--no-menu", action="store_true", help="Start without interactive menu")
+    parser.add_argument("--no-gui", action="store_true", help="Disable GUI file picker (headless mode)")
+    parser.add_argument("--xevil-key", dest="xevil_key", default=None, help="Override XEvil API key")
+    parser.add_argument("--dummy-captcha", action="store_true", help="Return dummy CAPTCHA solution for testing")
+    return parser.parse_args()
+
+
+def resolve_accounts_file(preferred_path: Optional[str], no_gui: bool) -> Optional[str]:
+    # Priority: CLI path -> env path -> default (only if exists) -> GUI (if allowed)
+    candidate_paths = []
+    if preferred_path:
+        candidate_paths.append(preferred_path)
+    env_path = os.getenv("ACCOUNTS_FILE")
+    if env_path and env_path not in candidate_paths:
+        candidate_paths.append(env_path)
+    if os.path.exists(DEFAULT_ACCOUNTS_FILE) and DEFAULT_ACCOUNTS_FILE not in candidate_paths:
+        candidate_paths.append(DEFAULT_ACCOUNTS_FILE)
+
+    for path in candidate_paths:
+        if path and os.path.exists(path):
+            return path
+
+    if no_gui:
+        return None
+
+    return select_file_dialog()
+
 @app.route("/get-creds", methods=["GET"])
 def get_creds():
     global accounts
@@ -256,6 +317,12 @@ def solve_captcha():
     USE_XEVIL = True
 
     # Check if XEvil API key is configured
+    if app.config.get("DUMMY_CAPTCHA", False):
+        # Dummy solver path for development/testing
+        dummy_solution = "ABCD"
+        logger.info('DUMMY_CAPTCHA enabled, returning dummy solution: %s', dummy_solution)
+        return jsonify({'result': dummy_solution, 'captcha': dummy_solution, 'solution': dummy_solution})
+
     if XEVIL_API_KEY == "YOUR_XEVIL_API_KEY_HERE":
         logger.error('XEvil API key not configured! Please set your actual API key.')
         return jsonify({'error': 'XEvil API key not configured. Please edit the script and set your API key.'}), 500
@@ -443,24 +510,45 @@ def get_status():
 
 if __name__ == "__main__":
     try:
-        # Show main menu
-        if main_menu():
-            # Load accounts file using Tkinter dialog
-            ACCOUNTS_FILE = load_accounts_interactive()
-            accounts = load_accounts()
-            
-            # Print initial stats
-            print_separator()
-            print_status(f"📊 LOADED {len(accounts)} VALID ACCOUNTS", "success")
-            print_status(f"📁 File: {os.path.basename(ACCOUNTS_FILE)}", "info")
-            print_status(f"🌐 Server will start on: http://localhost:5050", "info")
-            print_status("🔧 Press Ctrl+C to stop the server", "warning")
-            print_status("📱 Open multiple ultimateshop.vc tabs for parallel checking", "highlight")
-            print_separator()
-            
-            # Start Flask server
-            app.run(host="0.0.0.0", port=5050, debug=False)
-            
+        args = parse_args()
+
+        # Configure runtime from args/env
+        if args.xevil_key:
+            XEVIL_API_KEY = args.xevil_key  # noqa: F841  (keep global usage below)
+        app.config["DUMMY_CAPTCHA"] = bool(args.dummy_captcha or app.config.get("DUMMY_CAPTCHA", False))
+
+        # Decide whether to show menu
+        interactive_menu = not args.no_menu and sys.stdin.isatty()
+
+        if interactive_menu:
+            if not main_menu():
+                sys.exit(0)
+        else:
+            print_banner()
+            print_status("🚀 Starting UltimateShop Checker (Headless Mode)...", "highlight")
+
+        # Resolve accounts file (CLI/env/default or GUI)
+        ACCOUNTS_FILE = resolve_accounts_file(args.accounts_file, no_gui=args.no_gui or not interactive_menu)
+        if not ACCOUNTS_FILE:
+            print_status("❌ No accounts file provided or selected. Use --accounts-file or set ACCOUNTS_FILE env.", "error")
+            sys.exit(1)
+
+        accounts = load_accounts()
+
+        # Print initial stats
+        print_separator()
+        print_status(f"📊 LOADED {len(accounts)} VALID ACCOUNTS", "success")
+        print_status(f"📁 File: {os.path.basename(ACCOUNTS_FILE)}", "info")
+        print_status(f"🌐 Server will start on: http://{args.host}:{args.port}", "info")
+        if app.config.get("DUMMY_CAPTCHA", False):
+            print_status("🧪 Dummy CAPTCHA mode enabled (for testing)", "warning")
+        print_status("🔧 Press Ctrl+C to stop the server", "warning")
+        print_status("📱 Open multiple ultimateshop.vc tabs for parallel checking", "highlight")
+        print_separator()
+
+        # Start Flask server
+        app.run(host=args.host, port=args.port, debug=False)
+
     except KeyboardInterrupt:
         print_separator()
         print_status("🛑 Server stopped by user", "error")
